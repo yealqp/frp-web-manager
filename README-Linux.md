@@ -140,7 +140,7 @@ To customize the backend connection address:
 
 The system creates a default administrator account:
 - Username: admin
-- Password: admin
+- Password: admin123
 
 It is recommended to change the default password immediately after your first login!
 
@@ -275,12 +275,7 @@ npm -v
 
 ```bash
 # 从GitHub克隆（如适用）
-git clone https://github.com/yourusername/frp-manager.git
-cd frp-manager
-
-# 或者下载并解压项目
-wget https://yourwebsite.com/frp-manager.tar.gz
-tar -xzvf frp-manager.tar.gz
+git clone https://github.com/yealqp/frp-web-manager.git
 cd frp-manager
 ```
 
@@ -377,7 +372,7 @@ sudo systemctl start frp-manager
 
 系统默认创建管理员账户：
 - 用户名：admin
-- 密码：admin
+- 密码：admin123
 
 首次登录后，建议立即修改默认密码！
 
