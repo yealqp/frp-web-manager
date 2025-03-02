@@ -42,13 +42,9 @@ npm -v
 
 ```bash
 # Clone from GitHub (if applicable)
-git clone https://github.com/yourusername/frp-manager.git
+git clone https://github.com/yealqp/frp-web-manager.git
 cd frp-manager
 
-# Or download and extract the project
-wget https://yourwebsite.com/frp-manager.tar.gz
-tar -xzvf frp-manager.tar.gz
-cd frp-manager
 ```
 
 #### 3. Install Dependencies
