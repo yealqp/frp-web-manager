@@ -10,7 +10,7 @@ import logger from './utils/logger';
 import userModel from './models/userModel';
 
 // 定义端口变量
-const PORT = process.env.PORT || 3001;
+const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 3001;
 
 // 创建Express应用
 const app = express();
@@ -73,7 +73,7 @@ async function startApp() {
     logger.info('已检查并确保默认管理员用户存在');
     
     // 启动HTTP服务器
-    app.listen(PORT, '0.0.0.0', () => {
+    server.listen(PORT, '0.0.0.0', () => {
       logger.info(`服务器已启动在 http://localhost:${PORT}`);
     });
   } catch (error) {

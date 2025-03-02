@@ -41,16 +41,23 @@ class UserModel {
   // 初始化数据库结构
   private async initDb() {
     await this.db.read();
-    // 如果数据为null，初始化为空对象
-    this.db.data = this.db.data || { users: [] };
-    await this.db.write();
+    // 如果数据为null或undefined，初始化为默认结构
+    if (!this.db.data) {
+      this.db.data = { users: [] };
+      await this.db.write();
+    }
   }
   
   // 初始化管理员用户（如果数据库为空）
   async initAdminUser(): Promise<void> {
     await this.db.read();
     
-    if (!this.db.data || !this.db.data.users || this.db.data.users.length === 0) {
+    // 确保db.data始终有效
+    if (!this.db.data) {
+      this.db.data = { users: [] };
+    }
+    
+    if (!this.db.data.users || this.db.data.users.length === 0) {
       logger.info('数据库中没有用户，创建默认管理员账户');
       const defaultAdmin = {
         id: uuidv4(),
@@ -72,8 +79,13 @@ class UserModel {
   async createUser(username: string, password: string): Promise<User> {
     await this.db.read();
     
+    // 确保db.data始终有效
+    if (!this.db.data) {
+      this.db.data = { users: [] };
+    }
+    
     // 检查用户名是否已存在
-    const existingUser = this.db.data?.users.find(user => user.username === username);
+    const existingUser = this.db.data.users.find(user => user.username === username);
     if (existingUser) {
       throw new Error('用户名已存在');
     }
@@ -87,7 +99,7 @@ class UserModel {
       updatedAt: new Date().toISOString()
     };
     
-    this.db.data?.users.push(newUser);
+    this.db.data.users.push(newUser);
     await this.db.write();
     
     return newUser;
@@ -97,7 +109,13 @@ class UserModel {
   async findByUsername(username: string): Promise<User | null> {
     await this.db.read();
     
-    const user = this.db.data?.users.find(user => user.username === username) || null;
+    // 确保db.data始终有效
+    if (!this.db.data) {
+      this.db.data = { users: [] };
+      return null;
+    }
+    
+    const user = this.db.data.users.find(user => user.username === username) || null;
     return user;
   }
   
@@ -105,7 +123,13 @@ class UserModel {
   async findById(id: string): Promise<User | null> {
     await this.db.read();
     
-    const user = this.db.data?.users.find(user => user.id === id) || null;
+    // 确保db.data始终有效
+    if (!this.db.data) {
+      this.db.data = { users: [] };
+      return null;
+    }
+    
+    const user = this.db.data.users.find(user => user.id === id) || null;
     return user;
   }
   
@@ -114,15 +138,26 @@ class UserModel {
     try {
       await this.db.read();
       
-      const user = this.db.data?.users.find(user => user.id === userId);
+      // 确保db.data始终有效
+      if (!this.db.data) {
+        this.db.data = { users: [] };
+        return false;
+      }
+      
+      const user = this.db.data.users.find(user => user.id === userId);
       if (!user) {
         logger.warn(`尝试验证不存在用户 ${userId} 的密码`);
         return false;
       }
       
-      // 确保参数类型正确
-      if (typeof password !== 'string' || typeof user.passwordHash !== 'string') {
-        logger.error(`密码验证参数类型错误: password (${typeof password}), passwordHash (${typeof user.passwordHash})`);
+      // 确保参数类型正确并存在密码哈希值
+      if (typeof password !== 'string') {
+        logger.error(`密码验证参数类型错误: password (${typeof password})`);
+        return false;
+      }
+      
+      if (!user.passwordHash || typeof user.passwordHash !== 'string') {
+        logger.error(`用户 ${userId} 的密码哈希值不存在或类型错误: passwordHash (${typeof user.passwordHash})`);
         return false;
       }
       
@@ -140,6 +175,7 @@ class UserModel {
     await this.db.read();
     
     if (!this.db.data) {
+      this.db.data = { users: [] };
       return null;
     }
     
