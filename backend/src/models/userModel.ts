@@ -91,12 +91,26 @@ class UserModel {
   
   // 验证密码
   async validatePassword(userId: string, password: string): Promise<boolean> {
-    const user = this.db.get('users').find((user: User) => user.id === userId).value();
-    if (!user) {
+    try {
+      const user = this.db.get('users').find((user: User) => user.id === userId).value();
+      if (!user) {
+        logger.warn(`尝试验证不存在用户 ${userId} 的密码`);
+        return false;
+      }
+      
+      // 确保参数类型正确
+      if (typeof password !== 'string' || typeof user.passwordHash !== 'string') {
+        logger.error(`密码验证参数类型错误: password (${typeof password}), passwordHash (${typeof user.passwordHash})`);
+        return false;
+      }
+      
+      // 使用bcrypt比较密码
+      const result = await bcrypt.compare(password, user.passwordHash);
+      return result;
+    } catch (error) {
+      logger.error(`密码验证错误: ${error}`);
       return false;
     }
-    
-    return bcrypt.compare(password, user.passwordHash);
   }
   
   // 更新用户信息

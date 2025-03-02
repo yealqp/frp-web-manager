@@ -3,9 +3,9 @@ import jwt from 'jsonwebtoken';
 import userModel from '../models/userModel';
 import logger from '../utils/logger';
 
-// JWT密钥（请替换为你自己的密钥）
-const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-replace-in-production';
-const JWT_EXPIRATION = process.env.JWT_EXPIRATION || '1d';
+// 恢复原始的JWT密钥，确保与现有令牌兼容
+const JWT_SECRET = 'frp-manager-secret-key';
+const JWT_EXPIRATION = '24h';
 
 // 为Request接口扩展，添加user属性
 declare global {
