@@ -9,7 +9,10 @@ export const login = async (req: Request, res: Response) => {
   try {
     const { username, password } = req.body;
     
+    logger.info(`尝试登录，用户名: ${username}`);
+    
     if (!username || !password) {
+      logger.warn(`登录失败: 用户名或密码为空，用户名: ${username}`);
       return res.status(400).json({ success: false, message: '用户名和密码不能为空' });
     }
     
@@ -17,28 +20,41 @@ export const login = async (req: Request, res: Response) => {
     const user = userModel.findByUsername(username);
     
     if (!user) {
+      logger.warn(`登录失败: 用户不存在，用户名: ${username}`);
       return res.status(401).json({ success: false, message: '用户名或密码错误' });
     }
+    
+    logger.info(`找到用户: ${username}, 用户ID: ${user.id}`);
     
     // 验证密码
-    const isPasswordValid = await userModel.validatePassword(user.id, password);
-    
-    if (!isPasswordValid) {
-      return res.status(401).json({ success: false, message: '用户名或密码错误' });
-    }
-    
-    // 生成令牌
-    const token = generateToken(user.id, user.username);
-    
-    // 返回用户信息和令牌
-    res.json({
-      success: true,
-      data: {
-        id: user.id,
-        username: user.username,
-        token
+    try {
+      const isPasswordValid = await userModel.validatePassword(user.id, password);
+      
+      if (!isPasswordValid) {
+        logger.warn(`登录失败: 密码验证失败，用户名: ${username}`);
+        return res.status(401).json({ success: false, message: '用户名或密码错误' });
       }
-    });
+      
+      logger.info(`密码验证成功，用户名: ${username}`);
+      
+      // 生成令牌
+      const token = generateToken(user.id, user.username);
+      
+      logger.info(`登录成功，为用户 ${username} 生成了令牌`);
+      
+      // 返回用户信息和令牌
+      res.json({
+        success: true,
+        data: {
+          id: user.id,
+          username: user.username,
+          token
+        }
+      });
+    } catch (error) {
+      logger.error(`密码验证过程中出错: ${error}`);
+      return res.status(500).json({ success: false, message: '登录过程中出错，请稍后再试' });
+    }
   } catch (error) {
     logger.error(`登录失败: ${error}`);
     res.status(500).json({ success: false, message: '登录失败' });

@@ -62,20 +62,25 @@ io.on('connection', (socket) => {
   });
 });
 
-// 初始化默认管理员账户
-(async () => {
+// 确保在应用启动时初始化管理员账户
+async function startApp() {
   try {
+    // 先初始化默认用户
     await userModel.initAdminUser();
+    logger.info('已检查并确保默认管理员用户存在');
+    
+    // 启动HTTP服务器
+    app.listen(PORT, '0.0.0.0', () => {
+      logger.info(`服务器已启动在 http://localhost:${PORT}`);
+    });
   } catch (error) {
-    logger.error(`初始化管理员账户失败: ${error}`);
+    logger.error(`启动应用出错: ${error}`);
+    process.exit(1);
   }
-})();
+}
 
-// 启动服务器
-const PORT = process.env.PORT || 3001;
-server.listen(PORT, () => {
-  logger.info(`服务器运行在端口 ${PORT}`);
-});
+// 启动应用
+startApp();
 
 // 处理未捕获的异常
 process.on('uncaughtException', (error) => {
@@ -85,4 +90,4 @@ process.on('uncaughtException', (error) => {
 // 处理未处理的Promise拒绝
 process.on('unhandledRejection', (reason, promise) => {
   logger.error(`未处理的Promise拒绝: ${reason}`);
-}); 
+});
