@@ -34,7 +34,7 @@ export const generateToken = (id: string, username: string): string => {
 };
 
 // 验证JWT令牌的中间件
-export const authMiddleware = (req: Request, res: Response, next: NextFunction) => {
+export const authMiddleware = async (req: Request, res: Response, next: NextFunction) => {
   // 从请求头中获取令牌
   const authHeader = req.headers.authorization;
   const token = authHeader && authHeader.split(' ')[1];
@@ -48,7 +48,7 @@ export const authMiddleware = (req: Request, res: Response, next: NextFunction) 
     const decoded = jwt.verify(token, JWT_SECRET) as { id: string; username: string };
     
     // 查找用户
-    const user = userModel.findById(decoded.id);
+    const user = await userModel.findById(decoded.id);
     
     if (!user) {
       return res.status(401).json({ success: false, message: '用户不存在或令牌无效' });

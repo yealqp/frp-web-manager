@@ -9,6 +9,9 @@ import frpService from './services/frpService';
 import logger from './utils/logger';
 import userModel from './models/userModel';
 
+// 定义端口变量
+const PORT = process.env.PORT || 3001;
+
 // 创建Express应用
 const app = express();
 const server = http.createServer(app);

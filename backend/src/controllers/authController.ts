@@ -17,7 +17,7 @@ export const login = async (req: Request, res: Response) => {
     }
     
     // 查找用户
-    const user = userModel.findByUsername(username);
+    const user = await userModel.findByUsername(username);
     
     if (!user) {
       logger.warn(`登录失败: 用户不存在，用户名: ${username}`);
@@ -130,7 +130,7 @@ export const getMe = async (req: Request, res: Response) => {
       return res.status(401).json({ success: false, message: '未授权' });
     }
     
-    const user = userModel.findById(userId);
+    const user = await userModel.findById(userId);
     
     if (!user) {
       return res.status(404).json({ success: false, message: '用户不存在' });
@@ -209,7 +209,7 @@ export const updateUser = async (req: Request, res: Response) => {
       
       try {
         // 检查新用户名是否已存在
-        const existingUser = userModel.findByUsername(newUsername);
+        const existingUser = await userModel.findByUsername(newUsername);
         
         if (existingUser && existingUser.id !== userId) {
           return res.status(400).json({ success: false, message: '用户名已存在' });
@@ -230,7 +230,7 @@ export const updateUser = async (req: Request, res: Response) => {
     }
     
     // 获取更新后的用户信息
-    const updatedUser = userModel.findById(userId);
+    const updatedUser = await userModel.findById(userId);
     
     if (!updatedUser) {
       return res.status(404).json({ success: false, message: '用户不存在' });
