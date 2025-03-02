@@ -2,6 +2,8 @@ import { Request, Response } from 'express';
 import userModel from '../models/userModel';
 import { generateToken } from '../middlewares/authMiddleware';
 import logger from '../utils/logger';
+import jwt from 'jsonwebtoken';
+import config from '../config';
 
 // 用户登录
 export const login = async (req: Request, res: Response) => {
@@ -102,4 +104,95 @@ export const getCurrentUser = (req: Request, res: Response) => {
       username: req.user.username
     }
   });
+};
+
+// 获取当前用户信息
+export const getMe = async (req: Request, res: Response) => {
+  try {
+    const userId = req.user?.id;
+    
+    if (!userId) {
+      return res.status(401).json({ success: false, message: '未授权' });
+    }
+    
+    const user = await userModel.findById(userId);
+    
+    if (!user) {
+      return res.status(404).json({ success: false, message: '用户不存在' });
+    }
+    
+    res.json({
+      success: true,
+      data: {
+        id: user.id,
+        username: user.username
+      }
+    });
+  } catch (error) {
+    logger.error(`获取用户信息错误: ${error}`);
+    res.status(500).json({ success: false, message: '服务器错误' });
+  }
+};
+
+// 更新用户信息
+export const updateUser = async (req: Request, res: Response) => {
+  try {
+    const userId = req.user?.id;
+    
+    if (!userId) {
+      return res.status(401).json({ success: false, message: '未授权' });
+    }
+    
+    const { newUsername, currentPassword, newPassword } = req.body;
+    
+    // 只有在提供了当前密码和新密码时才更新密码
+    if (currentPassword && newPassword) {
+      // 验证当前密码
+      const isValidPassword = await userModel.validatePassword(userId, currentPassword);
+      
+      if (!isValidPassword) {
+        return res.status(401).json({ success: false, message: '当前密码错误' });
+      }
+      
+      // 更新密码
+      await userModel.updateUser(userId, { password: newPassword });
+      logger.info(`用户 ${userId} 更新了密码`);
+    }
+    
+    // 只有在提供了新用户名时才更新用户名
+    if (newUsername) {
+      // 检查新用户名是否已存在
+      const existingUser = await userModel.findByUsername(newUsername);
+      
+      if (existingUser && existingUser.id !== userId) {
+        return res.status(400).json({ success: false, message: '用户名已存在' });
+      }
+      
+      // 更新用户名
+      await userModel.updateUser(userId, { username: newUsername });
+      logger.info(`用户 ${userId} 更新了用户名为 ${newUsername}`);
+    }
+    
+    // 获取更新后的用户信息
+    const updatedUser = await userModel.findById(userId);
+    
+    if (!updatedUser) {
+      return res.status(404).json({ success: false, message: '用户不存在' });
+    }
+    
+    // 生成新的JWT令牌（因为用户名可能已更改）
+    const token = generateToken(updatedUser.id, updatedUser.username);
+    
+    res.json({
+      success: true,
+      data: {
+        id: updatedUser.id,
+        username: updatedUser.username,
+        token
+      }
+    });
+  } catch (error) {
+    logger.error(`更新用户信息错误: ${error}`);
+    res.status(500).json({ success: false, message: '服务器错误' });
+  }
 }; 

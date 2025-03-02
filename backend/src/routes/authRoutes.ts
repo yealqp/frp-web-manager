@@ -16,6 +16,9 @@ router.post('/register', (req, res) => {
 });
 
 // 需要认证的路由
-router.get('/me', authMiddleware, authController.getCurrentUser);
+router.get('/me', authMiddleware, authController.getMe);
+
+// 用户信息更新路由
+router.put('/update-user', authMiddleware, authController.updateUser);
 
 export default router; 

@@ -4,7 +4,8 @@ import {
   UserOutlined, 
   LogoutOutlined, 
   DownOutlined, 
-  SettingOutlined 
+  SettingOutlined,
+  UserSwitchOutlined
 } from '@ant-design/icons';
 import { Outlet, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
@@ -25,11 +26,16 @@ const AppLayout: React.FC = () => {
       logout();
     } else if (key === 'settings') {
       navigate('/settings');
+    } else if (key === 'user-settings') {
+      navigate('/user-settings');
     }
   };
 
   const userMenu = (
     <Menu onClick={({ key }) => handleMenuClick(key as string)}>
+      <Menu.Item key="user-settings" icon={<UserSwitchOutlined />}>
+        用户设置
+      </Menu.Item>
       <Menu.Item key="settings" icon={<SettingOutlined />}>
         系统设置
       </Menu.Item>

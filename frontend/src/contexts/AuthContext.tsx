@@ -10,6 +10,7 @@ interface AuthContextType {
   login: (username: string, password: string) => Promise<boolean>;
   register: (username: string, password: string) => Promise<boolean>;
   logout: () => void;
+  refreshUser: () => void;
 }
 
 // 创建认证上下文
@@ -19,7 +20,8 @@ const AuthContext = createContext<AuthContextType>({
   isLoading: true,
   login: async () => false,
   register: async () => false,
-  logout: () => {}
+  logout: () => {},
+  refreshUser: () => {}
 });
 
 // 认证提供者属性类型
@@ -80,6 +82,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     message.success('已退出登录');
   };
   
+  const refreshUser = () => {
+    const storedUser = getStoredUser();
+    if (storedUser) {
+      setUser(storedUser);
+    }
+  };
+  
   return (
     <AuthContext.Provider 
       value={{ 
@@ -88,7 +97,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         isLoading, 
         login, 
         register, 
-        logout 
+        logout,
+        refreshUser
       }}
     >
       {children}

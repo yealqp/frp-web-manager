@@ -33,6 +33,26 @@ export const login = async (username: string, password: string): Promise<User> =
   return response.data.data;
 };
 
+// 更新用户信息
+export interface UpdateUserParams {
+  newUsername?: string;
+  currentPassword?: string;
+  newPassword?: string;
+}
+
+export const updateUserInfo = async (params: UpdateUserParams): Promise<User> => {
+  const response = await axios.put<LoginResponse>(`${API_URL}/update-user`, params);
+  
+  // 如果更新了用户名，则更新本地存储的用户信息
+  if (params.newUsername && response.data.data) {
+    const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
+    currentUser.username = response.data.data.username;
+    localStorage.setItem('user', JSON.stringify(currentUser));
+  }
+  
+  return response.data.data;
+};
+
 // 注册方法
 export const register = async (username: string, password: string): Promise<User> => {
   const response = await axios.post<LoginResponse>(`${API_URL}/register`, {

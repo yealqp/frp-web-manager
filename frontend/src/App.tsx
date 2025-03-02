@@ -10,6 +10,7 @@ import CreateConfigPage from './pages/CreateConfigPage';
 import EditConfigPage from './pages/EditConfigPage';
 import LogViewerPage from './pages/LogViewerPage';
 import SettingsPage from './pages/SettingsPage';
+import UserSettingsPage from './pages/UserSettingsPage';
 import LoginPage from './pages/LoginPage';
 import './App.css';
 
@@ -30,6 +31,7 @@ const App: React.FC = () => {
                 <Route path="/edit/:id" element={<EditConfigPage />} />
                 <Route path="/logs/:id" element={<LogViewerPage />} />
                 <Route path="/settings" element={<SettingsPage />} />
+                <Route path="/user-settings" element={<UserSettingsPage />} />
               </Route>
             </Route>
           </Routes>
