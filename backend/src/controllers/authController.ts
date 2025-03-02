@@ -144,32 +144,73 @@ export const updateUser = async (req: Request, res: Response) => {
     
     const { newUsername, currentPassword, newPassword } = req.body;
     
+    logger.info(`用户 ${userId} 请求更新信息: ${JSON.stringify({
+      hasNewUsername: !!newUsername,
+      hasCurrentPassword: !!currentPassword,
+      hasNewPassword: !!newPassword
+    })}`);
+    
     // 只有在提供了当前密码和新密码时才更新密码
     if (currentPassword && newPassword) {
-      // 验证当前密码
-      const isValidPassword = await userModel.validatePassword(userId, currentPassword);
-      
-      if (!isValidPassword) {
-        return res.status(401).json({ success: false, message: '当前密码错误' });
+      // 验证密码类型
+      if (typeof currentPassword !== 'string' || typeof newPassword !== 'string') {
+        return res.status(400).json({ success: false, message: '密码必须是字符串类型' });
       }
       
-      // 更新密码
-      await userModel.updateUser(userId, { password: newPassword });
-      logger.info(`用户 ${userId} 更新了密码`);
+      // 密码长度验证
+      if (newPassword.length < 6) {
+        return res.status(400).json({ success: false, message: '新密码长度不能小于6位' });
+      }
+      
+      // 验证当前密码
+      try {
+        const isValidPassword = await userModel.validatePassword(userId, currentPassword);
+        
+        if (!isValidPassword) {
+          return res.status(401).json({ success: false, message: '当前密码错误' });
+        }
+        
+        // 更新密码
+        await userModel.updateUser(userId, { password: newPassword });
+        logger.info(`用户 ${userId} 更新了密码`);
+      } catch (error) {
+        logger.error(`密码验证/更新失败: ${error}`);
+        return res.status(500).json({ success: false, message: '密码更新失败' });
+      }
     }
     
     // 只有在提供了新用户名时才更新用户名
     if (newUsername) {
-      // 检查新用户名是否已存在
-      const existingUser = userModel.findByUsername(newUsername);
-      
-      if (existingUser && existingUser.id !== userId) {
-        return res.status(400).json({ success: false, message: '用户名已存在' });
+      // 验证用户名类型
+      if (typeof newUsername !== 'string') {
+        return res.status(400).json({ success: false, message: '用户名必须是字符串类型' });
       }
       
-      // 更新用户名
-      await userModel.updateUser(userId, { username: newUsername });
-      logger.info(`用户 ${userId} 更新了用户名为 ${newUsername}`);
+      // 用户名长度验证
+      if (newUsername.length < 3) {
+        return res.status(400).json({ success: false, message: '用户名长度不能小于3位' });
+      }
+      
+      try {
+        // 检查新用户名是否已存在
+        const existingUser = userModel.findByUsername(newUsername);
+        
+        if (existingUser && existingUser.id !== userId) {
+          return res.status(400).json({ success: false, message: '用户名已存在' });
+        }
+        
+        // 更新用户名
+        await userModel.updateUser(userId, { username: newUsername });
+        logger.info(`用户 ${userId} 更新了用户名为 ${newUsername}`);
+      } catch (error) {
+        logger.error(`用户名更新失败: ${error}`);
+        return res.status(500).json({ success: false, message: '用户名更新失败' });
+      }
+    }
+    
+    // 如果没有提供任何更新内容
+    if (!newUsername && !newPassword) {
+      return res.status(400).json({ success: false, message: '未提供任何更新内容' });
     }
     
     // 获取更新后的用户信息
@@ -180,16 +221,21 @@ export const updateUser = async (req: Request, res: Response) => {
     }
     
     // 生成新的JWT令牌（因为用户名可能已更改）
-    const token = generateToken(updatedUser.id, updatedUser.username);
-    
-    res.json({
-      success: true,
-      data: {
-        id: updatedUser.id,
-        username: updatedUser.username,
-        token
-      }
-    });
+    try {
+      const token = generateToken(updatedUser.id, updatedUser.username);
+      
+      res.json({
+        success: true,
+        data: {
+          id: updatedUser.id,
+          username: updatedUser.username,
+          token
+        }
+      });
+    } catch (error) {
+      logger.error(`生成令牌失败: ${error}`);
+      return res.status(500).json({ success: false, message: '生成令牌失败' });
+    }
   } catch (error) {
     logger.error(`更新用户信息错误: ${error}`);
     res.status(500).json({ success: false, message: '服务器错误' });

@@ -111,9 +111,21 @@ class UserModel {
       user.username = updates.username;
     }
     
-    // 更新密码
+    // 更新密码 - 使用固定值10替代this.SALT_ROUNDS
     if (updates.password) {
-      user.passwordHash = await bcrypt.hash(updates.password, this.SALT_ROUNDS);
+      try {
+        // 明确检查password是否为字符串
+        if (typeof updates.password === 'string') {
+          const saltRounds = 10; // 直接使用固定值避免this引用问题
+          user.passwordHash = await bcrypt.hash(updates.password, saltRounds);
+          logger.info(`已为用户 ${userId} 生成新的密码哈希`);
+        } else {
+          throw new Error('密码必须是字符串类型');
+        }
+      } catch (error) {
+        logger.error(`密码哈希生成失败: ${error}`);
+        throw error; // 重新抛出以便上层处理
+      }
     }
     
     // 更新时间戳

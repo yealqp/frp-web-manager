@@ -3,8 +3,9 @@ import jwt from 'jsonwebtoken';
 import userModel from '../models/userModel';
 import logger from '../utils/logger';
 
-// JWT密钥，实际应用中应该存储在环境变量中
-const JWT_SECRET = 'frp-manager-secret-key';
+// JWT密钥（请替换为你自己的密钥）
+const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-replace-in-production';
+const JWT_EXPIRATION = process.env.JWT_EXPIRATION || '1d';
 
 // 为Request接口扩展，添加user属性
 declare global {
@@ -19,8 +20,17 @@ declare global {
 }
 
 // 生成JWT令牌
-export const generateToken = (userId: string, username: string): string => {
-  return jwt.sign({ id: userId, username }, JWT_SECRET, { expiresIn: '24h' });
+export const generateToken = (id: string, username: string): string => {
+  try {
+    return jwt.sign(
+      { id, username },
+      JWT_SECRET,
+      { expiresIn: JWT_EXPIRATION }
+    );
+  } catch (error) {
+    console.error('JWT令牌生成失败:', error);
+    throw new Error('令牌生成失败');
+  }
 };
 
 // 验证JWT令牌的中间件
