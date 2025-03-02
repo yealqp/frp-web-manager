@@ -1,0 +1,156 @@
+/* 全局样式 */
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+code {
+  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
+    monospace;
+}
+
+/* 全局过渡时间和曲线变量 */
+:root {
+  --transition-fast: 0.2s;
+  --transition-medium: 0.4s;
+  --transition-slow: 0.6s;
+  --ease-smooth: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-bounce: cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* 过渡动画 */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* 缩放淡入动画 */
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* 添加页面进入动画类 */
+.page-enter {
+  animation: fadeIn 0.5s var(--ease-smooth);
+}
+
+/* 页面容器过渡 */
+.ant-layout-content {
+  transition: all 0.5s var(--ease-smooth);
+}
+
+/* 确保页面切换有平滑过渡 */
+.ant-spin {
+  transition: all 0.5s var(--ease-smooth);
+}
+
+/* 卡片组件平滑过渡 */
+.ant-card {
+  transition: all 0.5s var(--ease-smooth);
+  animation: scaleIn 0.5s var(--ease-smooth);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.ant-card:hover {
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+}
+
+/* 文本编辑区平滑过渡 */
+.ant-input, 
+.ant-input-textarea {
+  transition: all 0.4s var(--ease-smooth) !important;
+}
+
+/* 表单控件过渡 */
+.ant-select,
+.ant-form-item {
+  transition: all 0.3s var(--ease-smooth) !important;
+}
+
+/* 确保骨架屏有淡入淡出效果 */
+.ant-skeleton {
+  animation: fadeIn 0.5s var(--ease-smooth);
+}
+
+/* 按钮过渡效果 */
+.ant-btn {
+  transition: all 0.3s var(--ease-bounce) !important;
+}
+
+.ant-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+.ant-btn:active {
+  transform: translateY(1px);
+}
+
+/* 面包屑导航平滑过渡 */
+.ant-breadcrumb {
+  animation: fadeIn 0.5s var(--ease-smooth);
+}
+
+/* 页面切换辅助类 */
+.smooth-content {
+  animation: fadeIn 0.6s var(--ease-smooth);
+  transition: all 0.5s var(--ease-smooth);
+}
+
+/* 配置内容区域特殊过渡 */
+.config-content-area {
+  position: relative;
+  transition: all 0.5s var(--ease-smooth);
+}
+
+.config-content-area:before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(255, 255, 255, 0.02);
+  opacity: 0;
+  transition: opacity 0.5s var(--ease-smooth);
+  pointer-events: none;
+  z-index: 5;
+}
+
+.config-content-area:hover:before {
+  opacity: 1;
+}
+
+/* 加载状态叠加层 */
+.loading-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(3px);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  animation: fadeIn 0.4s var(--ease-smooth);
+  z-index: 100;
+  border-radius: 4px;
+} 
