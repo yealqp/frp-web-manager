@@ -3,12 +3,13 @@
 [English](#english) | [中文](#中文)
 
 <a name="english"></a>
+
 ## English
 
 ### System Requirements
 
 - Windows 10 or higher
-- Node.js 14+ 
+- Node.js 14+
 - npm 6+ or yarn 1.22+
 - Supported browsers: Chrome, Edge, Firefox (latest versions)
 
@@ -89,8 +90,9 @@ To customize the backend connection address:
 #### Default User
 
 The system creates a default administrator account:
+
 - Username: admin
-- Password: admin123
+- Password: admin
 
 It is recommended to change the default password immediately after your first login!
 
@@ -136,12 +138,13 @@ For help, please contact the system administrator or submit an issue on the proj
 ---
 
 <a name="中文"></a>
+
 ## 中文
 
 ### 系统要求
 
 - Windows 10 或更高版本
-- Node.js 14+ 
+- Node.js 14+
 - npm 6+ 或 yarn 1.22+
 - 支持的浏览器：Chrome, Edge, Firefox 最新版本
 
@@ -222,8 +225,9 @@ npm run start
 #### 默认用户
 
 系统默认创建管理员账户：
+
 - 用户名：admin
-- 密码：admin123
+- 密码：admin
 
 首次登录后，建议立即修改默认密码！
 
@@ -264,4 +268,4 @@ npm run build
 
 ### 支持
 
-如需帮助，请联系系统管理员或在项目的Issues页面提交问题。 
+如需帮助，请联系系统管理员或在项目的Issues页面提交问题。

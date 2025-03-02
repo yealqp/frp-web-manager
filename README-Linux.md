@@ -3,12 +3,13 @@
 [English](#english) | [中文](#中文)
 
 <a name="english"></a>
+
 ## English
 
 ### System Requirements
 
 - Supported Linux distributions: Ubuntu 18.04+, Debian 10+, CentOS 7+
-- Node.js 14+ 
+- Node.js 14+
 - npm 6+ or yarn 1.22+
 - Supported browsers: Chrome, Firefox (latest versions)
 
@@ -17,6 +18,7 @@
 #### 1. Install Node.js
 
 Ubuntu/Debian:
+
 ```bash
 # Install Node.js and npm
 curl -fsSL https://deb.nodesource.com/setup_16.x | sudo -E bash -
@@ -28,6 +30,7 @@ npm -v
 ```
 
 CentOS/RHEL:
+
 ```bash
 # Install Node.js and npm
 curl -fsSL https://rpm.nodesource.com/setup_16.x | sudo bash -
@@ -77,6 +80,7 @@ chmod +x *.sh
 #### 6. Start the Services
 
 Development mode:
+
 ```bash
 # Start the backend
 cd backend
@@ -88,6 +92,7 @@ npm start
 ```
 
 Production mode:
+
 ```bash
 cd backend
 npm run start
@@ -96,11 +101,13 @@ npm run start
 #### 7. Setup Auto-start (Optional)
 
 Create a systemd service:
+
 ```bash
 sudo nano /etc/systemd/system/frp-manager.service
 ```
 
 Enter the following content:
+
 ```
 [Unit]
 Description=FRP Manager
@@ -118,6 +125,7 @@ WantedBy=multi-user.target
 ```
 
 Enable the service:
+
 ```bash
 sudo systemctl enable frp-manager
 sudo systemctl start frp-manager
@@ -139,8 +147,9 @@ To customize the backend connection address:
 #### Default User
 
 The system creates a default administrator account:
+
 - Username: admin
-- Password: admin123
+- Password: admin
 
 It is recommended to change the default password immediately after your first login!
 
@@ -194,6 +203,7 @@ sudo semanage port -a -t http_port_t -p tcp 3000
 ### View Logs
 
 Service logs are located at:
+
 ```bash
 # Development mode
 backend/logs/
@@ -205,6 +215,7 @@ sudo journalctl -u frp-manager
 ### Updates
 
 Update the system:
+
 ```bash
 git pull
 cd backend
@@ -215,6 +226,7 @@ npm run build
 ```
 
 If using systemd:
+
 ```bash
 sudo systemctl restart frp-manager
 ```
@@ -236,12 +248,13 @@ For help, please contact the system administrator or submit an issue on the proj
 ---
 
 <a name="中文"></a>
+
 ## 中文
 
 ### 系统要求
 
 - 支持的Linux发行版：Ubuntu 18.04+, Debian 10+, CentOS 7+
-- Node.js 14+ 
+- Node.js 14+
 - npm 6+ 或 yarn 1.22+
 - 支持的浏览器：Chrome, Firefox 最新版本
 
@@ -250,6 +263,7 @@ For help, please contact the system administrator or submit an issue on the proj
 #### 1. 安装 Node.js
 
 Ubuntu/Debian:
+
 ```bash
 # 安装Node.js和npm
 curl -fsSL https://deb.nodesource.com/setup_16.x | sudo -E bash -
@@ -261,6 +275,7 @@ npm -v
 ```
 
 CentOS/RHEL:
+
 ```bash
 # 安装Node.js和npm
 curl -fsSL https://rpm.nodesource.com/setup_16.x | sudo bash -
@@ -309,6 +324,7 @@ chmod +x *.sh
 #### 6. 启动服务
 
 开发模式:
+
 ```bash
 # 启动后端
 cd backend
@@ -320,6 +336,7 @@ npm start
 ```
 
 生产模式:
+
 ```bash
 cd backend
 npm run start
@@ -328,11 +345,13 @@ npm run start
 #### 7. 设置开机自启（可选）
 
 创建systemd服务:
+
 ```bash
 sudo nano /etc/systemd/system/frp-manager.service
 ```
 
 填入以下内容:
+
 ```
 [Unit]
 Description=FRP Manager
@@ -350,6 +369,7 @@ WantedBy=multi-user.target
 ```
 
 启用服务:
+
 ```bash
 sudo systemctl enable frp-manager
 sudo systemctl start frp-manager
@@ -371,8 +391,9 @@ sudo systemctl start frp-manager
 #### 默认用户
 
 系统默认创建管理员账户：
+
 - 用户名：admin
-- 密码：admin123
+- 密码：admin
 
 首次登录后，建议立即修改默认密码！
 
@@ -426,6 +447,7 @@ sudo semanage port -a -t http_port_t -p tcp 3000
 ### 日志查看
 
 服务日志位于:
+
 ```bash
 # 开发模式
 backend/logs/
@@ -437,6 +459,7 @@ sudo journalctl -u frp-manager
 ### 更新
 
 更新系统:
+
 ```bash
 git pull
 cd backend
@@ -447,6 +470,7 @@ npm run build
 ```
 
 如果使用systemd:
+
 ```bash
 sudo systemctl restart frp-manager
 ```
@@ -463,4 +487,4 @@ sudo systemctl restart frp-manager
 
 ### 支持
 
-如需帮助，请联系系统管理员或在项目的Issues页面提交问题。 
+如需帮助，请联系系统管理员或在项目的Issues页面提交问题。
