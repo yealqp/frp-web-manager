@@ -3,7 +3,6 @@ import userModel from '../models/userModel';
 import { generateToken } from '../middlewares/authMiddleware';
 import logger from '../utils/logger';
 import jwt from 'jsonwebtoken';
-import config from '../config';
 
 // 用户登录
 export const login = async (req: Request, res: Response) => {
@@ -22,7 +21,7 @@ export const login = async (req: Request, res: Response) => {
     }
     
     // 验证密码
-    const isPasswordValid = await userModel.validatePassword(user, password);
+    const isPasswordValid = await userModel.validatePassword(user.id, password);
     
     if (!isPasswordValid) {
       return res.status(401).json({ success: false, message: '用户名或密码错误' });
@@ -115,7 +114,7 @@ export const getMe = async (req: Request, res: Response) => {
       return res.status(401).json({ success: false, message: '未授权' });
     }
     
-    const user = await userModel.findById(userId);
+    const user = userModel.findById(userId);
     
     if (!user) {
       return res.status(404).json({ success: false, message: '用户不存在' });
@@ -162,7 +161,7 @@ export const updateUser = async (req: Request, res: Response) => {
     // 只有在提供了新用户名时才更新用户名
     if (newUsername) {
       // 检查新用户名是否已存在
-      const existingUser = await userModel.findByUsername(newUsername);
+      const existingUser = userModel.findByUsername(newUsername);
       
       if (existingUser && existingUser.id !== userId) {
         return res.status(400).json({ success: false, message: '用户名已存在' });
@@ -174,7 +173,7 @@ export const updateUser = async (req: Request, res: Response) => {
     }
     
     // 获取更新后的用户信息
-    const updatedUser = await userModel.findById(userId);
+    const updatedUser = userModel.findById(userId);
     
     if (!updatedUser) {
       return res.status(404).json({ success: false, message: '用户不存在' });
