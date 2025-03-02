@@ -90,7 +90,7 @@ To customize the backend connection address:
 
 The system creates a default administrator account:
 - Username: admin
-- Password: admin
+- Password: admin123
 
 It is recommended to change the default password immediately after your first login!
 
@@ -223,7 +223,7 @@ npm run start
 
 系统默认创建管理员账户：
 - 用户名：admin
-- 密码：admin
+- 密码：admin123
 
 首次登录后，建议立即修改默认密码！
 
