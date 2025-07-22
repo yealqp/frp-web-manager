@@ -8,14 +8,12 @@ import userModel from '../models/userModel';
 // 获取所有配置
 export const getAllConfigs = async (req: Request, res: Response) => {
   try {
-    let configs;
-    if (req.user?.role === 'admin') {
-      configs = frpService.getConfigs();
-    } else {
+    let configs = frpService.getConfigs();
+    if (req.user?.role !== 'admin') {
       // 普通用户只显示自己拥有的隧道
       const user = await userModel.findById(String(req.user?.id));
       const tunnelIds = user?.tunnels?.map(t => t.tunnelId) || [];
-      configs = frpService.getConfigs().filter(cfg => tunnelIds.includes(cfg.tunnelId));
+      configs = configs.filter(cfg => tunnelIds.includes(cfg.tunnelId));
     }
     res.json({ success: true, data: configs });
   } catch (error) {
@@ -258,4 +256,18 @@ export const getNodeNameByNodeId = (req: Request, res: Response) => {
   const name = frpService.getNodeNameByNodeId(nodeId);
   if (!name) return res.status(404).json({ success: false, message: '未找到节点' });
   res.json({ success: true, data: name });
+}; 
+
+// 获取指定节点下的空闲端口
+export const getFreePort = (req: Request, res: Response) => {
+  const { nodeId } = req.query;
+  const nodeIdNum = Number(nodeId);
+  if (!nodeIdNum) {
+    return res.status(400).json({ success: false, message: '缺少或错误的nodeId参数' });
+  }
+  const port = frpService.getFreePortByNodeId(nodeIdNum);
+  if (!port) {
+    return res.status(500).json({ success: false, message: '没有可用端口' });
+  }
+  res.json({ success: true, data: port });
 }; 

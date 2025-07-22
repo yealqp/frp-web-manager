@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Table, Button, Tag, message, Modal } from 'antd';
+import { Table, Button, Tag, message, Modal, Row, Col } from 'antd';
 import { getAllConfigs } from '../api/frpApi';
 import { getAllUsers } from '../api/userApi';
 import { useNavigate } from 'react-router-dom';
@@ -120,13 +120,19 @@ const AdminTunnelPage: React.FC = () => {
 
   return (
     <div style={{ padding: 24 }}>
-      <h2>管理员隧道管理</h2>
-      <Table columns={columns} dataSource={tunnels} rowKey="id" loading={loading} />
+      <Row gutter={[16, 16]} align="middle" style={{ marginBottom: 16 }}>
+        <Col xs={24}>
+          <h2>管理员隧道管理</h2>
+        </Col>
+      </Row>
+      <Table columns={columns} dataSource={tunnels} rowKey="id" loading={loading} scroll={{ x: 'max-content' }} />
       <Modal
         title="隧道详情"
         visible={detailModal.visible}
         onCancel={() => setDetailModal({ visible: false })}
         footer={null}
+        width={400}
+        bodyStyle={{ padding: 24 }}
       >
         {detailModal.detail ? (
           <div style={{ lineHeight: 2 }}>

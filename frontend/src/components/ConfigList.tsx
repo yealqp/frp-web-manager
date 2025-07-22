@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Table, Button, Space, Tag, Modal, message } from 'antd';
+import { Table, Button, Space, Tag, Modal, message, Row, Col } from 'antd';
 import {EditOutlined, DeleteOutlined, PlayCircleOutlined, PauseCircleOutlined, EyeOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import { FrpConfig, getAllConfigs, deleteConfig, startFrp, stopFrp, readConfig, getNodeNameByNodeId } from '../api/frpApi';
@@ -225,12 +225,15 @@ const ConfigList: React.FC = () => {
         dataSource={configs} 
         rowKey="id" 
         loading={loading}
+        scroll={{ x: 'max-content' }}
       />
       <Modal
         title="隧道详情"
         visible={detailModal.visible}
         onCancel={() => setDetailModal({ visible: false })}
         footer={null}
+        width={400}
+        bodyStyle={{ padding: 24 }}
       >
         {detailModal.detail ? (
           <div style={{ lineHeight: 2 }}>

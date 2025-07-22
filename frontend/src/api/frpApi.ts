@@ -100,3 +100,9 @@ export const getNodeNameByNodeId = async (nodeId: number): Promise<string> => {
   const response = await axios.get(`${API_URL}/tunnels/node-name/${nodeId}`);
   return response.data.data;
 };
+
+// 获取指定节点下的空闲端口
+export const getFreePortByNodeId = async (nodeId: number): Promise<number> => {
+  const response = await axios.get(`${API_URL}/free-port`, { params: { nodeId } });
+  return response.data.data;
+};

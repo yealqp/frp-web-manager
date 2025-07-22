@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Form, Input, Button, Card, Typography, Spin } from 'antd';
+import { Form, Input, Button, Card, Typography, Spin, Row, Col } from 'antd';
 import { UserOutlined, LockOutlined } from '@ant-design/icons';
 import { useNavigate, Navigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
@@ -42,62 +42,67 @@ const LoginPage: React.FC = () => {
 
   return (
     <div style={{ 
-      display: 'flex', 
-      justifyContent: 'center', 
-      alignItems: 'center', 
-      height: '100vh',
+      minHeight: '100vh',
       background: '#f0f2f5',
-      animation: 'fadeIn 0.4s ease'
+      animation: 'fadeIn 0.4s ease',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center'
     }}>
-      <Card 
-        style={{ 
-          width: 400, 
-          boxShadow: '0 4px 8px rgba(0,0,0,0.1)',
-          borderRadius: '8px' 
-        }}
-      >
-        <div style={{ textAlign: 'center', marginBottom: 32 }}>
-          <Title level={2}>FRP 管理系统</Title>
-        </div>
-        
-        <Form
-          name="login"
-          onFinish={handleLogin}
-          initialValues={{ remember: true }}
-        >
-          <Form.Item
-            name="username"
-            rules={[{ required: true, message: '请输入用户名' }]}
+      <Row justify="center" style={{ width: '100%' }}>
+        <Col xs={24} sm={16} md={12} lg={8} xl={6}>
+          <Card 
+            style={{ 
+              width: '100%',
+              maxWidth: 400,
+              boxShadow: '0 4px 8px rgba(0,0,0,0.1)',
+              borderRadius: '8px',
+              margin: '0 auto'
+            }}
           >
-            <Input 
-              prefix={<UserOutlined />} 
-              placeholder="用户名" 
-              size="large"
-            />
-          </Form.Item>
-          <Form.Item
-            name="password"
-            rules={[{ required: true, message: '请输入密码' }]}
-          >
-            <Input.Password
-              prefix={<LockOutlined />}
-              placeholder="密码"
-              size="large"
-            />
-          </Form.Item>
-          <Form.Item>
-            <Button 
-              type="primary" 
-              htmlType="submit" 
-              style={{ width: '100%' }}
-              size="large"
-              loading={loading}
+            <div style={{ textAlign: 'center', marginBottom: 32 }}>
+              <Title level={2}>FRP 管理系统</Title>
+            </div>
+            <Form
+              name="login"
+              onFinish={handleLogin}
+              initialValues={{ remember: true }}
             >
-              登录
-            </Button>
-          </Form.Item>
-        </Form>
-      </Card>
+              <Form.Item
+                name="username"
+                rules={[{ required: true, message: '请输入用户名' }]}
+              >
+                <Input 
+                  prefix={<UserOutlined />} 
+                  placeholder="用户名" 
+                  size="large"
+                />
+              </Form.Item>
+              <Form.Item
+                name="password"
+                rules={[{ required: true, message: '请输入密码' }]}
+              >
+                <Input.Password
+                  prefix={<LockOutlined />}
+                  placeholder="密码"
+                  size="large"
+                />
+              </Form.Item>
+              <Form.Item>
+                <Button 
+                  type="primary" 
+                  htmlType="submit" 
+                  style={{ width: '100%' }}
+                  size="large"
+                  loading={loading}
+                >
+                  登录
+                </Button>
+              </Form.Item>
+            </Form>
+          </Card>
+        </Col>
+      </Row>
     </div>
   );
 };

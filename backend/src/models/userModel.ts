@@ -16,7 +16,7 @@ export interface User {
   source: string; // 来源
   createdAt: string;
   updatedAt: string;
-  tunnels?: Array<{ tunnelId: number; name: string; configFile: string; nodeId?: number; nodeName?: string; createdAt?: string; updatedAt?: string; }>;
+  tunnels?: Array<{ tunnelId: number; name: string; configFile: string; nodeId?: number; nodeName?: string; createdAt?: string; updatedAt?: string; remotePort?: number; }>;
   tunnelLimit?: number;
 }
 
@@ -267,7 +267,7 @@ class UserModel {
   }
 
   // 为用户添加隧道
-  async addTunnelToUser(userId: string, tunnel: { tunnelId: number; name: string; configFile: string; nodeId?: number; nodeName?: string; createdAt?: string; updatedAt?: string; }) {
+  async addTunnelToUser(userId: string, tunnel: { tunnelId: number; name: string; configFile: string; nodeId?: number; nodeName?: string; createdAt?: string; updatedAt?: string; remotePort?: number; }) {
     await this.db.read();
     if (!this.db.data) return;
     const user = this.db.data.users.find(u => u.id === userId);

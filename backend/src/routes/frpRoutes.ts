@@ -31,4 +31,7 @@ router.get('/templates/:type', frpController.getTemplateConfig);
 // 查询节点名称
 router.get('/tunnels/node-name/:nodeId', getNodeNameByNodeId);
 
+// 获取指定节点下的空闲端口
+router.get('/free-port', frpController.getFreePort);
+
 export default router; 

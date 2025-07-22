@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Form, Input, Button, Card, message, Select, Skeleton, Spin } from 'antd';
+import { Form, Input, Button, Card, message, Select, Skeleton, Spin, Row, Col } from 'antd';
 import { useNavigate, useParams } from 'react-router-dom';
-import { editConfig, readConfigFile, getConfig, createConfig, getServerList, ServerInfo, getAllConfigs } from '../api/frpApi';
+import { editConfig, readConfigFile, getConfig, createConfig, getServerList, ServerInfo, getAllConfigs, getFreePortByNodeId } from '../api/frpApi';
+import axios from 'axios';
 
 const { Option } = Select;
 const { TextArea } = Input;
@@ -152,39 +153,32 @@ remotePort = ${remotePort}
   };
   
   return (
-    <div className="config-form smooth-content">
+    <div className="config-form smooth-content" style={{ background: '#fff', borderRadius: 12, boxShadow: '0 2px 16px rgba(0,0,0,0.08)', padding: 32, maxWidth: 700, margin: '32px auto', border: '1px solid #f0f0f0' }}>
       <Card
-        title={mode === 'create' ? '新建隧道' : `${configName || '未知'} - 隧道编辑`}
+        title={<span style={{ fontWeight: 700, fontSize: 20, letterSpacing: 1 }}>{mode === 'create' ? '新建隧道' : `${configName || '未知'} - 隧道编辑`}</span>}
         extra={
-          <>
-            <Button 
-              onClick={handleSave} 
-              type="primary" 
-              loading={loading} 
-              style={{ 
-                marginRight: 8,
-                transition: 'all 0.3s var(--ease-smooth)',
-                transform: loading ? 'scale(0.98)' : 'scale(1)'
-              }}
-            >
-              {mode === 'create' ? '创建' : '保存'}
-            </Button>
-            <Button 
-              onClick={handleBack}
-              style={{ 
-                transition: 'all 0.3s var(--ease-smooth)'
-              }}
-            >
-              返回
-            </Button>
-          </>
+          <Row gutter={[8, 8]}>
+            <Col xs={24} sm={12}>
+              <Button 
+                onClick={handleSave} 
+                type="primary" 
+                loading={loading} 
+                style={{ width: '100%', fontWeight: 600, fontSize: 16, borderRadius: 6, boxShadow: '0 2px 8px rgba(24,144,255,0.08)' }}
+              >
+                {mode === 'create' ? '创建' : '保存'}
+              </Button>
+            </Col>
+            <Col xs={24} sm={12}>
+              <Button 
+                onClick={handleBack}
+                style={{ width: '100%', fontWeight: 600, fontSize: 16, borderRadius: 6 }}
+              >
+                返回
+              </Button>
+            </Col>
+          </Row>
         }
-        style={{ 
-          width: '100%',
-          transition: 'all 0.5s var(--ease-smooth)',
-          boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-          borderRadius: '4px'
-        }}
+        style={{ width: '100%', maxWidth: 700, margin: '0 auto', background: 'transparent', boxShadow: 'none', border: 'none' }}
       >
         {initialLoading ? (
           <div style={{ animation: 'fadeIn 0.5s cubic-bezier(0.23, 1, 0.32, 1)' }}>
@@ -196,35 +190,27 @@ remotePort = ${remotePort}
         ) : (
           <>
             {mode === 'create' && (
-              <div style={{ 
-                marginBottom: 16,
-                animation: 'fadeIn 0.5s cubic-bezier(0.23, 1, 0.32, 1)'
-              }}>
-                <Form layout="inline">
-                  <Form.Item label="名称" style={{ marginBottom: 16 }}>
-                    <Input 
-                      placeholder="请输入隧道名称" 
-                      value={configName}
-                      onChange={(e) => setConfigName(e.target.value)}
-                      style={{ 
-                        width: 200,
-                        transition: 'all 0.3s cubic-bezier(0.23, 1, 0.32, 1)'
-                      }}
-                    />
-                  </Form.Item>
+              <div style={{ marginBottom: 16, animation: 'fadeIn 0.5s cubic-bezier(0.23, 1, 0.32, 1)' }}>
+                <Form layout="vertical">
+                  <Row gutter={[16, 0]}>
+                    <Col xs={24} sm={12}>
+                      <Form.Item label={<span style={{ fontWeight: 600 }}>名称 <span style={{ color: '#ff4d4f' }}>*</span></span>} style={{ marginBottom: 16 }}>
+                        <Input 
+                          placeholder="请输入隧道名称" 
+                          value={configName}
+                          onChange={(e) => setConfigName(e.target.value)}
+                          style={{ width: '100%', borderRadius: 6, fontSize: 15 }}
+                        />
+                      </Form.Item>
+                    </Col>
+                  </Row>
                 </Form>
               </div>
             )}
             <div className="config-content-area" style={{ minHeight: 400 }}>
               {loading && (
                 <div className="loading-overlay">
-                  <div style={{
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    transform: 'scale(1.1)',
-                    transition: 'transform 0.3s var(--ease-smooth)'
-                  }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', transform: 'scale(1.1)', transition: 'transform 0.3s var(--ease-smooth)' }}>
                     <Spin size="large" tip={`加载模板...`} />
                     <div style={{ marginTop: '10px', fontSize: '12px', color: '#888' }}>
                       请稍候...
@@ -232,96 +218,91 @@ remotePort = ${remotePort}
                   </div>
                 </div>
               )}
-              <div style={{ 
-                transition: 'all 0.5s var(--ease-smooth)', 
-                opacity: loading ? 0.5 : 1,
-                filter: loading ? 'blur(1.5px)' : 'none',
-                transform: loading ? 'scale(0.99)' : 'scale(1)'
-              }}>
-                <Form layout="vertical">
-                  <Form.Item label="服务器" required>
-                    <Select
-                      value={selectedServer ? selectedServer.name : undefined}
-                      onChange={name => {
-                        const s = serverList.find(item => item.name === name);
-                        setSelectedServer(s || null);
-                      }}
-                      placeholder="请选择服务器"
-                      disabled={loading}
-                      style={{ width: 240 }}
-                    >
-                      {serverList.map(s => (
-                        <Select.Option key={s.name} value={s.name}>{s.name}</Select.Option>
-                      ))}
-                    </Select>
-                  </Form.Item>
-                  {selectedServer && selectedServer.allowed_ports && (
-                    <div style={{ marginBottom: 16, color: '#888' }}>
-                      该机器允许远程端口范围：{selectedServer.allowed_ports[0]} - {selectedServer.allowed_ports[1]}
-                    </div>
-                  )}
-                  <Form.Item label="机器内网IP" required>
-                    <Input value={localIp} onChange={e => setLocalIp(e.target.value)} disabled={loading} />
-                  </Form.Item>
-                  <Form.Item label="本地端口" required>
-                    <Input value={localPort} onChange={e => setLocalPort(e.target.value)} disabled={loading} />
-                  </Form.Item>
-                  <Form.Item label="远程端口" required>
-                    <Input
-                      value={remotePort}
-                      onChange={e => setRemotePort(e.target.value)}
-                      disabled={loading}
-                      style={{ width: 180, marginRight: 8 }}
-                    />
-                    <Button
-                      onClick={async () => {
-                        if (!selectedServer || !selectedServer.allowed_ports) {
-                          message.warning('请先选择服务器');
-                          return;
-                        }
-                        setLoading(true);
-                        try {
-                          const configs = await getAllConfigs();
-                          // 只筛选当前服务器下的隧道，编辑模式下排除自己
-                          const usedPorts = new Set(
-                            configs
-                              .filter(cfg => cfg.nodeId === selectedServer.nodeId && (!id || cfg.id !== id))
-                              .map(cfg => Number(cfg.remotePort))
-                              .filter(p => Number.isInteger(p) && p > 0)
-                          );
-                          const [start, end] = selectedServer.allowed_ports;
-                          let found = null;
-                          for (let p = start; p <= end; p++) {
-                            if (!usedPorts.has(p)) {
-                              found = p;
-                              break;
+              <Form layout="vertical">
+                <Row gutter={[16, 0]}>
+                  <Col xs={24} sm={12}>
+                    <Form.Item label={<span style={{ fontWeight: 600 }}>服务器 <span style={{ color: '#ff4d4f' }}>*</span></span>} required>
+                      <Select
+                        value={selectedServer ? selectedServer.name : undefined}
+                        onChange={name => {
+                          const s = serverList.find(item => item.name === name);
+                          setSelectedServer(s || null);
+                        }}
+                        placeholder="请选择服务器"
+                        disabled={loading}
+                        style={{ width: '100%', borderRadius: 6, fontSize: 15 }}
+                        dropdownStyle={{ borderRadius: 8 }}
+                      >
+                        {serverList.map(s => (
+                          <Select.Option key={s.name} value={s.name}>{s.name}</Select.Option>
+                        ))}
+                      </Select>
+                    </Form.Item>
+                  </Col>
+                  <Col xs={24} sm={12} />
+                  <Col xs={24} sm={12}>
+                    <Form.Item label={<span style={{ fontWeight: 600 }}>机器内网IP <span style={{ color: '#ff4d4f' }}>*</span></span>} required>
+                      <Input value={localIp} onChange={e => setLocalIp(e.target.value)} disabled={loading} style={{ width: '100%', borderRadius: 6, fontSize: 15 }} />
+                      <div style={{ marginTop: 4, color: '#888', fontSize: 12 }}>
+                        请填写本机内网IP（10.0.0.x win+r输入cmd，输入ipconfig，找到以10.0.0开头的地址）
+                      </div>
+                    </Form.Item>
+                  </Col>
+                  <Col xs={24} sm={12}>
+                    <Form.Item label={<span style={{ fontWeight: 600 }}>本地端口 <span style={{ color: '#ff4d4f' }}>*</span></span>} required>
+                      <Input value={localPort} onChange={e => setLocalPort(e.target.value)} disabled={loading} style={{ width: '100%', borderRadius: 6, fontSize: 15 }} />
+                    </Form.Item>
+                  </Col>
+                  <Col xs={24} sm={12}>
+                    <Form.Item label={<span style={{ fontWeight: 600 }}>远程端口 <span style={{ color: '#ff4d4f' }}>*</span></span>} required>
+                      <Input.Group compact>
+                        <Input
+                          value={remotePort}
+                          onChange={e => setRemotePort(e.target.value)}
+                          disabled={loading}
+                          style={{ width: '70%', borderRadius: '6px 0 0 6px', fontSize: 15 }}
+                        />
+                        <Button
+                          onClick={async () => {
+                            if (!selectedServer || !selectedServer.nodeId) throw new Error('未选择服务器');
+                            setLoading(true);
+                            try {
+                              const port = await getFreePortByNodeId(selectedServer.nodeId);
+                              if (port) {
+                                setRemotePort(String(port));
+                                message.success(`已自动填充空闲端口：${port}`);
+                              } else {
+                                message.error('没有可用的空闲端口');
+                              }
+                            } catch (e) {
+                              message.error('获取端口信息失败');
+                            } finally {
+                              setLoading(false);
                             }
-                          }
-                          if (found) {
-                            setRemotePort(String(found));
-                            message.success(`已自动填充空闲端口：${found}`);
-                          } else {
-                            message.error('没有可用的空闲端口');
-                          }
-                        } catch (e) {
-                          message.error('获取端口信息失败');
-                        } finally {
-                          setLoading(false);
-                        }
-                      }}
-                      disabled={loading}
-                    >
-                      获取空闲端口
-                    </Button>
-                  </Form.Item>
-                  <Form.Item label="协议类型" required>
-                    <Select value={protocolType} onChange={v => setProtocolType(v)} disabled={loading} style={{ width: 120 }}>
-                      <Select.Option value="tcp">tcp</Select.Option>
-                      <Select.Option value="udp">udp</Select.Option>
-                    </Select>
-                  </Form.Item>
-                </Form>
-              </div>
+                          }}
+                          disabled={loading}
+                          style={{ width: '30%', borderRadius: '0 6px 6px 0', fontWeight: 600, fontSize: 13 }}
+                        >
+                          获取空闲端口
+                        </Button>
+                      </Input.Group>
+                      {selectedServer && Array.isArray(selectedServer.allowed_ports) && (
+                        <div style={{ marginTop: 4, color: '#888', fontSize: 12 }}>
+                          该节点允许远程端口范围：{selectedServer.allowed_ports[0]} - {selectedServer.allowed_ports[1]}
+                        </div>
+                      )}
+                    </Form.Item>
+                  </Col>
+                  <Col xs={24} sm={12}>
+                    <Form.Item label={<span style={{ fontWeight: 600 }}>协议类型 <span style={{ color: '#ff4d4f' }}>*</span></span>} required>
+                      <Select value={protocolType} onChange={v => setProtocolType(v)} disabled={loading} style={{ width: '100%', borderRadius: 6, fontSize: 15 }} dropdownStyle={{ borderRadius: 8 }}>
+                        <Select.Option value="tcp">tcp</Select.Option>
+                        <Select.Option value="udp">udp</Select.Option>
+                      </Select>
+                    </Form.Item>
+                  </Col>
+                </Row>
+              </Form>
             </div>
           </>
         )}

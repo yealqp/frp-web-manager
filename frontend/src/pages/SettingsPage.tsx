@@ -8,7 +8,9 @@ import {
   Divider, 
   Typography, 
   Switch, 
-  Space
+  Space,
+  Row,
+  Col
 } from 'antd';
 import { getApiBaseUrl, setCustomApiBaseUrl, resetApiBaseUrl } from '../utils/apiConfig';
 import { ArrowLeftOutlined, SaveOutlined, UndoOutlined } from '@ant-design/icons';
@@ -50,62 +52,67 @@ const SettingsPage: React.FC = () => {
 
   return (
     <div style={{ maxWidth: '800px', margin: '0 auto', padding: '20px' }}>
-
-      <Card>
-        <Title level={2}>系统设置</Title>
-        <Divider />
-        
-        <Title level={4}>后端连接设置</Title>
-        <Paragraph>
-          当前API地址: <strong>{getApiBaseUrl()}</strong>
-        </Paragraph>
-        
-        <Form
-          form={form}
-          layout="vertical"
-          onFinish={onFinish}
-        >
-          <Form.Item label="使用自定义API地址" name="useCustomUrl">
-            <Switch 
-              checked={useCustomUrl} 
-              onChange={(checked) => setUseCustomUrl(checked)} 
-            />
-          </Form.Item>
-          
-          {useCustomUrl && (
-            <Form.Item 
-              label="API地址" 
-              name="apiUrl" 
-              rules={[{ required: true, message: '请输入API地址' }]}
-              extra="例如: http://192.168.1.100:3001"
+      <Row gutter={[16, 16]} justify="center">
+        <Col xs={24} md={20} lg={16}>
+          <Card>
+            <Title level={2}>系统设置</Title>
+            <Divider />
+            
+            <Title level={4}>后端连接设置</Title>
+            <Paragraph>
+              当前API地址: <strong>{getApiBaseUrl()}</strong>
+            </Paragraph>
+            
+            <Form
+              form={form}
+              layout="vertical"
+              onFinish={onFinish}
             >
-              <Input placeholder="输入完整的后端API地址" />
-            </Form.Item>
-          )}
-          
-          <Form.Item>
-            <Space>
-              <Button 
-                type="primary" 
-                htmlType="submit" 
-                icon={<SaveOutlined />}
-              >
-                保存设置
-              </Button>
+              <Form.Item label="使用自定义API地址" name="useCustomUrl">
+                <Switch 
+                  checked={useCustomUrl} 
+                  onChange={(checked) => setUseCustomUrl(checked)} 
+                />
+              </Form.Item>
               
               {useCustomUrl && (
-                <Button 
-                  danger 
-                  icon={<UndoOutlined />} 
-                  onClick={() => resetApiBaseUrl()}
+                <Form.Item 
+                  label="API地址" 
+                  name="apiUrl" 
+                  rules={[{ required: true, message: '请输入API地址' }]}
+                  extra="例如: http://192.168.1.100:3001"
                 >
-                  重置为默认
-                </Button>
+                  <Input placeholder="输入完整的后端API地址" />
+                </Form.Item>
               )}
-            </Space>
-          </Form.Item>
-        </Form>
-      </Card>
+              
+              <Form.Item>
+                <Space style={{ width: '100%' }}>
+                  <Button 
+                    type="primary" 
+                    htmlType="submit" 
+                    icon={<SaveOutlined />}
+                    style={{ width: '100%' }}
+                  >
+                    保存设置
+                  </Button>
+                  
+                  {useCustomUrl && (
+                    <Button 
+                      danger 
+                      icon={<UndoOutlined />} 
+                      onClick={() => resetApiBaseUrl()}
+                      style={{ width: '100%' }}
+                    >
+                      重置为默认
+                    </Button>
+                  )}
+                </Space>
+              </Form.Item>
+            </Form>
+          </Card>
+        </Col>
+      </Row>
     </div>
   );
 };

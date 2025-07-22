@@ -22,7 +22,7 @@ const AppLayout: React.FC = () => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-
+  
   
   const handleMenuClick = (key: string) => {
     if (key === 'logout') {
@@ -73,19 +73,24 @@ const AppLayout: React.FC = () => {
         display: 'flex', 
         justifyContent: 'space-between', 
         alignItems: 'center',
-        boxShadow: '0 2px 8px rgba(0, 0, 0, 0.06)'
+        boxShadow: '0 2px 8px rgba(0, 0, 0, 0.06)',
+        position: 'sticky',
+        top: 0,
+        zIndex: 100
       }}>
         <Title 
           level={3} 
           style={{ 
             margin: '16px 0',
-            cursor: 'pointer' 
+            cursor: 'pointer',
+            fontSize: '1.2rem',
+            whiteSpace: 'pre-wrap',
+            wordBreak: 'break-all'
           }}
           onClick={() => navigate('/')}
         >
           CNOC External Gateway System  橘子云对外网关系统（用户端）
         </Title>
-        
         <div>
           <Dropdown menu={{ items: userMenuItems, onClick: ({ key }) => handleMenuClick(key as string) }} trigger={['click']}>
             <Button type="link">
@@ -97,7 +102,13 @@ const AppLayout: React.FC = () => {
         </div>
       </Header>
       <Layout>
-        <Sider width={200} style={{ background: '#fff', minHeight: 'calc(100vh - 64px)' }}>
+        <Sider
+          width={200}
+          style={{ background: '#fff', minHeight: 'calc(100vh - 64px)' }}
+          breakpoint="md"
+          collapsedWidth={48}
+          zeroWidthTriggerStyle={{ top: 70 }}
+        >
           <Menu
             mode="inline"
             style={{ height: '100%', borderRight: 0 }}
@@ -106,15 +117,16 @@ const AppLayout: React.FC = () => {
             selectedKeys={[location.pathname]}
           />
         </Sider>
-        <Content style={{ padding: '20px 50px' }}>
-          <Outlet />
-        </Content>
+        <Content style={{ padding: '20px 8px', minHeight: 0 }}>
+        <Outlet />
+      </Content>
       </Layout>
-      
       <Footer style={{ 
         textAlign: 'center',
         borderTop: '1px solid #f0f0f0',
-        padding: '16px'
+        padding: '16px',
+        fontSize: '0.95em',
+        wordBreak: 'break-all'
       }}>
         <div>CNOC External Gateway System©{new Date().getFullYear()} CNOC 版权所有</div>
       </Footer>

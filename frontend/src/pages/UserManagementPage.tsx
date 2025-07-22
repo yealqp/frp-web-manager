@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Table, Button, Modal, Form, Input, message, Popconfirm } from 'antd';
+import { Table, Button, Modal, Form, Input, message, Popconfirm, Row, Col } from 'antd';
 import { PlusOutlined, DeleteOutlined } from '@ant-design/icons';
 import { getAllUsers, createUser, deleteUser, updateUserPassword, setTunnelLimit } from '../api/userApi'; // 需要创建 userApi
 import { User } from '../api/authApi';
@@ -141,16 +141,16 @@ const UserManagementPage: React.FC = () => {
           <Button style={{ marginRight: 8 }} onClick={() => handleSetTunnelLimit(record.id)}>
             设置隧道上限
           </Button>
-          <Popconfirm
-            title="确定要删除这个用户吗？"
-            onConfirm={() => handleDeleteUser(record.id)}
-            okText="是"
-            cancelText="否"
-          >
-            <Button icon={<DeleteOutlined />} danger>
-              删除
-            </Button>
-          </Popconfirm>
+        <Popconfirm
+          title="确定要删除这个用户吗？"
+          onConfirm={() => handleDeleteUser(record.id)}
+          okText="是"
+          cancelText="否"
+        >
+          <Button icon={<DeleteOutlined />} danger>
+            删除
+          </Button>
+        </Popconfirm>
         </>
       ),
     },
@@ -158,20 +158,26 @@ const UserManagementPage: React.FC = () => {
 
   return (
     <div>
+      <Row gutter={[16, 16]} align="middle" style={{ marginBottom: 16 }}>
+        <Col xs={24} sm={12}>
       <Button
         type="primary"
         icon={<PlusOutlined />}
         onClick={showAddUserModal}
-        style={{ marginBottom: 16 }}
+            style={{ width: '100%' }}
       >
         添加用户
       </Button>
-      <Table columns={columns} dataSource={users} rowKey="id" loading={loading} />
+        </Col>
+      </Row>
+      <Table columns={columns} dataSource={users} rowKey="id" loading={loading} scroll={{ x: 'max-content' }} />
       <Modal
         title="添加新用户"
         visible={isModalVisible}
         onCancel={handleCancel}
         footer={null}
+        width={400}
+        bodyStyle={{ padding: 24 }}
       >
         <Form form={form} onFinish={handleAddUser} layout="vertical">
           <Form.Item
@@ -210,6 +216,8 @@ const UserManagementPage: React.FC = () => {
         onOk={handleResetPwdOk}
         okText="确定"
         cancelText="取消"
+        width={400}
+        bodyStyle={{ padding: 24 }}
       >
         <Form form={resetPwdForm} layout="vertical">
           <Form.Item
@@ -228,6 +236,8 @@ const UserManagementPage: React.FC = () => {
         onOk={handleTunnelLimitOk}
         okText="确定"
         cancelText="取消"
+        width={400}
+        bodyStyle={{ padding: 24 }}
       >
         <Form form={tunnelLimitForm} layout="vertical">
           <Form.Item

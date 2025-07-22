@@ -1,5 +1,5 @@
 import React, { Suspense, useEffect, useState } from 'react';
-import { Spin, Card, Descriptions, message } from 'antd';
+import { Spin, Card, Descriptions, message, Row, Col } from 'antd';
 import ConfigList from '../components/ConfigList';
 import PageTransition from '../components/PageTransition';
 import { getCurrentUser, User, getNotice } from '../api/authApi';
@@ -15,16 +15,16 @@ const HomePage: React.FC = () => {
   }, []);
   return (
     <PageTransition>
-      <div className="home-page page-enter" style={{ display: 'flex', gap: 24 }}>
-        <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column' }}>
+      <Row gutter={[24, 24]} className="home-page-responsive">
+        <Col xs={24} md={12}>
           {user && (
             <div style={{ fontSize: 26, fontWeight: 600, marginBottom: 16, textAlign: 'left' }}>
               欢迎回来, {user.username}
-            </div>
+      </div>
           )}
-          <Card style={{ marginBottom: 24, width: '100%', flex: 1 }} loading={loading}>
+          <Card style={{ marginBottom: 24, width: '100%' }} loading={loading}>
             {user && (
-              <Descriptions title="用户信息" column={2}>
+              <Descriptions title="用户信息" column={1}>
                 {user.userId && <Descriptions.Item label="用户ID">{user.userId}</Descriptions.Item>}
                 <Descriptions.Item label="用户名">{user.username}</Descriptions.Item>
                 <Descriptions.Item label="权限">{user.role}</Descriptions.Item>
@@ -33,14 +33,14 @@ const HomePage: React.FC = () => {
               </Descriptions>
             )}
           </Card>
-        </div>
-        <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column' }}>
+        </Col>
+        <Col xs={24} md={12}>
           <div style={{ height: 48 }} />
-          <Card title="系统公告" bordered={false} style={{ height: '100%', width: '100%', flex: 1 }}>
+          <Card title="系统公告" bordered={false} style={{ width: '100%' }}>
             <ReactMarkdown>{notice || '暂无公告'}</ReactMarkdown>
           </Card>
-        </div>
-      </div>
+        </Col>
+      </Row>
     </PageTransition>
   );
 };

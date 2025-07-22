@@ -59,6 +59,13 @@ class FrpService {
   // 加载现有配置
   public async loadConfigs() {
     try {
+      // 先记录当前正在运行的隧道状态
+      const runningMap = new Map<string, string>();
+      for (const c of this.configs) {
+        if (c.status === 'running') {
+          runningMap.set(c.id, 'running');
+        }
+      }
       // 1. 先获取所有用户的tunnels元数据
       const allUsers = await userModel.findAll();
       const allTunnels = allUsers.flatMap(user => (user.tunnels || []).map(t => ({ ...t, userId: user.id })));
@@ -85,12 +92,14 @@ class FrpService {
             if (parsed.proxies && Array.isArray(parsed.proxies) && parsed.proxies[0] && parsed.proxies[0].remotePort) {
               remotePort = Number(parsed.proxies[0].remotePort);
             }
+            // 保留原有运行状态
+            let status: 'running' | 'stopped' | 'error' = runningMap.has(meta.configFile || meta.tunnelId + '') ? 'running' : 'stopped';
             this.configs.push({
               id: meta.configFile || meta.tunnelId + '',
               tunnelId: meta.tunnelId,
               name: meta.name,
               type: 'frpc',
-              status: 'stopped',
+              status,
               configPath,
               folderPath: userFolderPath,
               createdAt: meta.createdAt ? new Date(meta.createdAt) : new Date(),
@@ -139,6 +148,22 @@ class FrpService {
     if (type !== 'frpc') {
       throw new Error('只支持frpc类型');
     }
+    // 解析remotePort
+    let remotePort = 0;
+    try {
+      const parsed = toml.parse(content);
+      if (parsed.proxies && Array.isArray(parsed.proxies) && parsed.proxies[0] && parsed.proxies[0].remotePort) {
+        remotePort = Number(parsed.proxies[0].remotePort);
+      }
+    } catch (e) {}
+    if (!remotePort) {
+      throw new Error('配置内容中未指定remotePort');
+    }
+    // 校验remotePort全局唯一
+    const used = this.configs.some(cfg => cfg.remotePort === remotePort);
+    if (used) {
+      throw new Error(`remotePort端口${remotePort}已被占用，请更换端口`);
+    }
     const tunnelId = this.getNextTunnelId();
     // nodeId应由前端传入（即所选服务器的nodeId）
     const nodeId = serverNodeId || 1;
@@ -148,14 +173,6 @@ class FrpService {
     const configFileName = `frp_${tunnelId}.toml`;
     const configPath = path.join(userFolder, configFileName);
     await fs.writeFile(configPath, content, 'utf-8');
-    // 解析remotePort
-    let remotePort = 0;
-    try {
-      const parsed = toml.parse(content);
-      if (parsed.proxies && Array.isArray(parsed.proxies) && parsed.proxies[0] && parsed.proxies[0].remotePort) {
-        remotePort = Number(parsed.proxies[0].remotePort);
-      }
-    } catch (e) {}
     const config: FrpConfig = {
       id: configFileName,
       tunnelId,
@@ -177,7 +194,8 @@ class FrpService {
       nodeId,
       nodeName: name,
       createdAt: config.createdAt.toISOString(),
-      updatedAt: config.updatedAt.toISOString()
+      updatedAt: config.updatedAt.toISOString(),
+      remotePort
     });
     this.configs.push(config);
     logger.info(`创建配置 ${name} 成功`);
@@ -205,11 +223,28 @@ class FrpService {
       throw new Error('无法编辑运行中的配置');
     }
     
+    // 解析remotePort
+    let remotePort = 0;
+    try {
+      const parsed = toml.parse(content);
+      if (parsed.proxies && Array.isArray(parsed.proxies) && parsed.proxies[0] && parsed.proxies[0].remotePort) {
+        remotePort = Number(parsed.proxies[0].remotePort);
+      }
+    } catch (e) {}
+    if (!remotePort) {
+      throw new Error('配置内容中未指定remotePort');
+    }
+    // 校验remotePort全局唯一（排除自身）
+    const used = this.configs.some(cfg => cfg.remotePort === remotePort && cfg.id !== id);
+    if (used) {
+      throw new Error(`remotePort端口${remotePort}已被占用，请更换端口`);
+    }
     // 更新配置文件
     await fs.writeFile(config.configPath, content, 'utf-8');
     
     // 更新配置
     config.updatedAt = new Date();
+    config.remotePort = remotePort;
     
     logger.info(`编辑配置 ${config.name} 成功`);
     return config;
@@ -377,6 +412,47 @@ class FrpService {
     } catch (e) {
       return undefined;
     }
+  }
+
+  /**
+   * 获取指定节点的下一个可用端口
+   * @param nodeId 节点ID
+   * @returns number 可用端口号，找不到则返回0
+   */
+  getFreePortByNodeId(nodeId: number): number {
+    // 读取serverList.json
+    const serverListPath = path.resolve(__dirname, '../../config/serverList.json');
+    let serverList: any[] = [];
+    try {
+      serverList = require(serverListPath);
+    } catch (e) {
+      try {
+        serverList = fs.readJsonSync(serverListPath);
+      } catch (e2) {
+        logger.error('读取serverList.json失败');
+        return 0;
+      }
+    }
+    const node = serverList.find((s: any) => s.nodeId === nodeId);
+    if (!node || !Array.isArray(node.allowed_ports) || node.allowed_ports.length !== 2) {
+      logger.error('未找到节点或端口范围配置错误');
+      return 0;
+    }
+    const [start, end] = node.allowed_ports;
+    // 统计所有已用端口（该节点下）
+    const usedPorts = new Set<number>();
+    for (const cfg of this.configs) {
+      if (cfg.nodeId === nodeId && typeof cfg.remotePort === 'number' && cfg.remotePort > 0) {
+        usedPorts.add(cfg.remotePort);
+      }
+    }
+    // 顺延查找未被占用的端口
+    for (let port = start; port <= end; port++) {
+      if (!usedPorts.has(port)) {
+        return port;
+      }
+    }
+    return 0; // 没有可用端口
   }
 }
 
