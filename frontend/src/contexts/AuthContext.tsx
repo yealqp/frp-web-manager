@@ -63,9 +63,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const register = async (username: string, password: string): Promise<boolean> => {
     try {
       setIsLoading(true);
-      const userData = await apiRegister(username, password);
-      setUser(userData);
-      message.success('注册成功');
+      await apiRegister(username, password);
+      // 注册成功后不需要自动登录，所以这里不设置 user
+      // message.success('注册成功'); // 消息将由注册页面处理
       return true;
     } catch (error: any) {
       const errorMsg = error.response?.data?.message || '注册失败';
@@ -107,4 +107,4 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 };
 
 // 自定义hook用于在组件中使用认证上下文
-export const useAuth = () => useContext(AuthContext); 
+export const useAuth = () => useContext(AuthContext);

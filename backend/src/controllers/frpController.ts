@@ -1,11 +1,22 @@
 import { Request, Response } from 'express';
 import frpService from '../services/frpService';
 import logger from '../utils/logger';
+import fs from 'fs';
+import path from 'path';
+import userModel from '../models/userModel';
 
 // 获取所有配置
 export const getAllConfigs = async (req: Request, res: Response) => {
   try {
-    const configs = frpService.getConfigs();
+    let configs;
+    if (req.user?.role === 'admin') {
+      configs = frpService.getConfigs();
+    } else {
+      // 普通用户只显示自己拥有的隧道
+      const user = await userModel.findById(String(req.user?.id));
+      const tunnelIds = user?.tunnels?.map(t => t.tunnelId) || [];
+      configs = frpService.getConfigs().filter(cfg => tunnelIds.includes(cfg.tunnelId));
+    }
     res.json({ success: true, data: configs });
   } catch (error) {
     logger.error(`获取所有配置失败: ${error}`);
@@ -21,6 +32,15 @@ export const getConfig = async (req: Request, res: Response) => {
     
     if (!config) {
       return res.status(404).json({ success: false, message: '配置不存在' });
+    }
+    
+    // 权限校验
+    if (req.user?.role !== 'admin') {
+      const user = await userModel.findById(String(req.user?.id));
+      const tunnelIds = user?.tunnels?.map(t => t.tunnelId) || [];
+      if (!tunnelIds.includes(config.tunnelId)) {
+        return res.status(403).json({ success: false, message: '无权访问该隧道' });
+      }
     }
     
     res.json({ success: true, data: config });
@@ -39,11 +59,11 @@ export const createConfig = async (req: Request, res: Response) => {
       return res.status(400).json({ success: false, message: '缺少必要参数' });
     }
     
-    if (type !== 'frpc' && type !== 'frps') {
-      return res.status(400).json({ success: false, message: '类型必须是 frpc 或 frps' });
+    if (type !== 'frpc') {
+      return res.status(400).json({ success: false, message: '类型必须是 frpc' });
     }
     
-    const config = await frpService.createConfig(name, type, content);
+    const config = await frpService.createConfig(name, type, content, req.user?.id);
     res.json({ success: true, data: config });
   } catch (error) {
     logger.error(`创建配置失败: ${error}`);
@@ -67,6 +87,15 @@ export const editConfig = async (req: Request, res: Response) => {
       return res.status(404).json({ success: false, message: '配置不存在' });
     }
     
+    // 权限校验
+    if (req.user?.role !== 'admin') {
+      const user = await userModel.findById(String(req.user?.id));
+      const tunnelIds = user?.tunnels?.map(t => t.tunnelId) || [];
+      if (!tunnelIds.includes(config.tunnelId)) {
+        return res.status(403).json({ success: false, message: '无权访问该隧道' });
+      }
+    }
+    
     res.json({ success: true, data: config });
   } catch (error: any) {
     logger.error(`编辑配置失败: ${error}`);
@@ -82,6 +111,16 @@ export const deleteConfig = async (req: Request, res: Response) => {
     
     if (!result) {
       return res.status(404).json({ success: false, message: '配置不存在' });
+    }
+    
+    // 权限校验
+    if (req.user?.role !== 'admin') {
+      const user = await userModel.findById(String(req.user?.id));
+      const tunnelIds = user?.tunnels?.map(t => t.tunnelId) || [];
+      const config = frpService.getConfig(id); // Re-fetch config to check tunnelId
+      if (config && !tunnelIds.includes(config.tunnelId)) {
+        return res.status(403).json({ success: false, message: '无权访问该隧道' });
+      }
     }
     
     res.json({ success: true });
@@ -101,6 +140,16 @@ export const startFrp = async (req: Request, res: Response) => {
       return res.status(500).json({ success: false, message: '启动FRP失败' });
     }
     
+    // 权限校验
+    if (req.user?.role !== 'admin') {
+      const user = await userModel.findById(String(req.user?.id));
+      const tunnelIds = user?.tunnels?.map(t => t.tunnelId) || [];
+      const config = frpService.getConfig(id); // Re-fetch config to check tunnelId
+      if (config && !tunnelIds.includes(config.tunnelId)) {
+        return res.status(403).json({ success: false, message: '无权访问该隧道' });
+      }
+    }
+    
     res.json({ success: true });
   } catch (error) {
     logger.error(`启动FRP失败: ${error}`);
@@ -116,6 +165,16 @@ export const stopFrp = async (req: Request, res: Response) => {
     
     if (!result) {
       return res.status(500).json({ success: false, message: '停止FRP失败' });
+    }
+    
+    // 权限校验
+    if (req.user?.role !== 'admin') {
+      const user = await userModel.findById(String(req.user?.id));
+      const tunnelIds = user?.tunnels?.map(t => t.tunnelId) || [];
+      const config = frpService.getConfig(id); // Re-fetch config to check tunnelId
+      if (config && !tunnelIds.includes(config.tunnelId)) {
+        return res.status(403).json({ success: false, message: '无权访问该隧道' });
+      }
     }
     
     res.json({ success: true });
@@ -142,8 +201,8 @@ export const getTemplateConfig = async (req: Request, res: Response) => {
   try {
     const { type } = req.params;
     
-    if (type !== 'frpc' && type !== 'frps') {
-      return res.status(400).json({ success: false, message: '类型必须是 frpc 或 frps' });
+    if (type !== 'frpc') {
+      return res.status(400).json({ success: false, message: '类型必须是 frpc' });
     }
     
     const template = frpService.getTemplateConfig(type);
@@ -164,9 +223,39 @@ export const readConfigFile = async (req: Request, res: Response) => {
       return res.status(404).json({ success: false, message: '配置文件不存在' });
     }
     
+    // 权限校验
+    if (req.user?.role !== 'admin') {
+      const user = await userModel.findById(String(req.user?.id));
+      const tunnelIds = user?.tunnels?.map(t => t.tunnelId) || [];
+      const config = frpService.getConfig(id); // Re-fetch config to check tunnelId
+      if (config && !tunnelIds.includes(config.tunnelId)) {
+        return res.status(403).json({ success: false, message: '无权访问该隧道' });
+      }
+    }
+    
     res.json({ success: true, data: content });
   } catch (error) {
     logger.error(`读取配置文件失败: ${error}`);
     res.status(500).json({ success: false, message: '读取配置文件失败' });
   }
+}; 
+
+// 获取服务器列表
+export const getServerList = (req: Request, res: Response) => {
+  const filePath = path.resolve(__dirname, '../../config/serverList.json');
+  try {
+    const data = fs.readFileSync(filePath, 'utf-8');
+    res.json({ success: true, data: JSON.parse(data) });
+  } catch (error) {
+    res.status(500).json({ success: false, message: '读取服务器列表失败' });
+  }
+}; 
+
+// 通过nodeId查找节点名称
+export const getNodeNameByNodeId = (req: Request, res: Response) => {
+  const nodeId = Number(req.params.nodeId);
+  if (!nodeId) return res.status(400).json({ success: false, message: '参数错误' });
+  const name = frpService.getNodeNameByNodeId(nodeId);
+  if (!name) return res.status(404).json({ success: false, message: '未找到节点' });
+  res.json({ success: true, data: name });
 }; 

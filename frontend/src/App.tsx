@@ -11,7 +11,11 @@ import EditConfigPage from './pages/EditConfigPage';
 import LogViewerPage from './pages/LogViewerPage';
 import SettingsPage from './pages/SettingsPage';
 import UserSettingsPage from './pages/UserSettingsPage';
+import UserManagementPage from './pages/UserManagementPage';
 import LoginPage from './pages/LoginPage';
+import ConfigList from './components/ConfigList';
+import AdminNoticePage from './pages/AdminNoticePage';
+import AdminTunnelPage from './pages/AdminTunnelPage';
 import './App.css';
 
 const App: React.FC = () => {
@@ -32,6 +36,10 @@ const App: React.FC = () => {
                 <Route path="/logs/:id" element={<LogViewerPage />} />
                 <Route path="/settings" element={<SettingsPage />} />
                 <Route path="/user-settings" element={<UserSettingsPage />} />
+                <Route path="/user-management" element={<UserManagementPage />} />
+                <Route path="/tunnels" element={<ConfigList />} />
+                <Route path="/admin-notice" element={<AdminNoticePage />} />
+                <Route path="/admin-tunnels" element={<AdminTunnelPage />} />
               </Route>
             </Route>
           </Routes>
@@ -41,4 +49,4 @@ const App: React.FC = () => {
   );
 };
 
-export default App; 
+export default App;

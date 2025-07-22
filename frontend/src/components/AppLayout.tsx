@@ -5,21 +5,24 @@ import {
   LogoutOutlined, 
   DownOutlined, 
   SettingOutlined,
-  UserSwitchOutlined
+  UserSwitchOutlined,
+  TeamOutlined,
+  HomeOutlined,
+  PlusOutlined,
+  FileTextOutlined
 } from '@ant-design/icons';
-import { Outlet, useNavigate } from 'react-router-dom';
+import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { getApiBaseUrl } from '../utils/apiConfig';
+import type { MenuProps } from 'antd';
 
-const { Header, Content, Footer } = Layout;
-const { Title, Text } = Typography;
+const { Header, Content, Footer, Sider } = Layout;
+const { Title } = Typography;
 
 const AppLayout: React.FC = () => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
-  
-  // 获取当前API基础URL，用于在页面底部显示
-  const apiBaseUrl = getApiBaseUrl();
+  const location = useLocation();
+
   
   const handleMenuClick = (key: string) => {
     if (key === 'logout') {
@@ -28,23 +31,39 @@ const AppLayout: React.FC = () => {
       navigate('/settings');
     } else if (key === 'user-settings') {
       navigate('/user-settings');
+    } else if (key === 'user-management') {
+      navigate('/user-management');
     }
   };
 
-  const userMenu = (
-    <Menu onClick={({ key }) => handleMenuClick(key as string)}>
-      <Menu.Item key="user-settings" icon={<UserSwitchOutlined />}>
-        用户设置
-      </Menu.Item>
-      <Menu.Item key="settings" icon={<SettingOutlined />}>
-        系统设置
-      </Menu.Item>
-      <Menu.Divider />
-      <Menu.Item key="logout" icon={<LogoutOutlined />}>
-        退出登录
-      </Menu.Item>
-    </Menu>
-  );
+  // antd v4.24+ 推荐用 menu={{ items }}
+  const userMenuItems: MenuProps['items'] = [
+    {
+      key: 'logout',
+      icon: <LogoutOutlined />,
+      label: '退出登录',
+    },
+  ];
+
+  // 左侧侧栏菜单项
+  const sideMenuItems: MenuProps['items'] = [
+    { key: '/', icon: <HomeOutlined />, label: '首页' },
+    { key: '/tunnels', icon: <FileTextOutlined />, label: '隧道列表' },
+    { key: '/create', icon: <PlusOutlined />, label: '新建隧道' },
+    { key: '/user-settings', icon: <UserSwitchOutlined />, label: '用户设置' },
+
+    ...(user?.role === 'admin' ? [{
+      key: 'admin',
+      icon: <TeamOutlined />,
+      label: '管理功能',
+      children: [
+        { key: '/user-management', icon: <TeamOutlined />, label: '用户管理' },
+        { key: '/admin-tunnels', icon: <FileTextOutlined />, label: '隧道管理' },
+        { key: '/admin-notice', icon: <FileTextOutlined />, label: '公告管理' },
+        { key: '/settings', icon: <SettingOutlined />, label: '系统设置' },
+      ]
+    }] : []),
+  ];
 
   return (
     <Layout style={{ minHeight: '100vh' }}>
@@ -64,11 +83,11 @@ const AppLayout: React.FC = () => {
           }}
           onClick={() => navigate('/')}
         >
-          FRP 管理系统
+          CNOC External Gateway System  橘子云对外网关系统（用户端）
         </Title>
         
         <div>
-          <Dropdown overlay={userMenu} trigger={['click']}>
+          <Dropdown menu={{ items: userMenuItems, onClick: ({ key }) => handleMenuClick(key as string) }} trigger={['click']}>
             <Button type="link">
               <Avatar icon={<UserOutlined />} style={{ marginRight: '8px' }} />
               {user?.username}
@@ -77,23 +96,30 @@ const AppLayout: React.FC = () => {
           </Dropdown>
         </div>
       </Header>
-      
-      <Content style={{ padding: '20px 50px' }}>
-        <Outlet />
-      </Content>
+      <Layout>
+        <Sider width={200} style={{ background: '#fff', minHeight: 'calc(100vh - 64px)' }}>
+          <Menu
+            mode="inline"
+            style={{ height: '100%', borderRight: 0 }}
+            items={sideMenuItems}
+            onClick={({ key }) => navigate(key)}
+            selectedKeys={[location.pathname]}
+          />
+        </Sider>
+        <Content style={{ padding: '20px 50px' }}>
+          <Outlet />
+        </Content>
+      </Layout>
       
       <Footer style={{ 
         textAlign: 'center',
         borderTop: '1px solid #f0f0f0',
         padding: '16px'
       }}>
-        <div>FRP 管理系统 ©{new Date().getFullYear()} yealqp 版权所有</div>
-        <Text type="secondary" style={{ fontSize: '12px' }}>
-          连接至: {apiBaseUrl}
-        </Text>
+        <div>CNOC External Gateway System©{new Date().getFullYear()} CNOC 版权所有</div>
       </Footer>
     </Layout>
   );
 };
 
-export default AppLayout; 
+export default AppLayout;

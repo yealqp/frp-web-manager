@@ -8,12 +8,23 @@ const API_URL = `${getApiBaseUrl()}/api`;
 export interface FrpConfig {
   id: string;
   name: string;
-  type: 'frpc' | 'frps';
+  type: 'frpc'; // 只保留frpc
   status: 'running' | 'stopped' | 'error';
   configPath: string;
   folderPath: string;
   createdAt: string;
   updatedAt: string;
+  nodeId?: number;
+  remotePort: number; // 新增
+}
+
+export interface ServerInfo {
+  name: string;
+  server_addr: string;
+  server_port: number;
+  token: string;
+  allowed_ports?: [number, number];
+  nodeId: number; // 新增
 }
 
 // 获取所有配置
@@ -70,5 +81,22 @@ export const getTemplateConfig = async (type: 'frpc' | 'frps'): Promise<string> 
 // 读取配置文件
 export const readConfigFile = async (id: string): Promise<string> => {
   const response = await axios.get(`${API_URL}/configs/${id}/content`);
+  return response.data.data;
+};
+
+// 读取配置内容
+export const readConfig = async (id: string): Promise<string> => {
+  const response = await axios.get(`${API_URL}/configs/${id}/content`);
+  return response.data.data;
+};
+
+export const getServerList = async (): Promise<ServerInfo[]> => {
+  const response = await axios.get(`${API_URL}/server-list`);
+  return response.data.data;
+};
+
+// 通过nodeId查找节点名称
+export const getNodeNameByNodeId = async (nodeId: number): Promise<string> => {
+  const response = await axios.get(`${API_URL}/tunnels/node-name/${nodeId}`);
   return response.data.data;
 };

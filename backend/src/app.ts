@@ -1,3 +1,7 @@
+// 加载环境变量
+import dotenv from 'dotenv';
+dotenv.config();
+
 import express from 'express';
 import http from 'http';
 import cors from 'cors';
@@ -5,6 +9,7 @@ import { Server } from 'socket.io';
 import path from 'path';
 import frpRoutes from './routes/frpRoutes';
 import authRoutes from './routes/authRoutes';
+import userRoutes from './routes/userRoutes';
 import frpService from './services/frpService';
 import logger from './utils/logger';
 import userModel from './models/userModel';
@@ -44,6 +49,7 @@ if (process.env.NODE_ENV === 'production') {
 
 // API路由
 app.use('/api/auth', authRoutes);
+app.use('/api/users', userRoutes);
 app.use('/api', frpRoutes);
 
 // 未找到的路由
@@ -71,7 +77,8 @@ async function startApp() {
     // 先初始化默认用户
     await userModel.initAdminUser();
     logger.info('已检查并确保默认管理员用户存在');
-    
+    // 新增：启动前加载所有隧道配置
+    await frpService.loadConfigs();
     // 启动HTTP服务器
     server.listen(PORT, '0.0.0.0', () => {
       logger.info(`服务器已启动在 http://localhost:${PORT}`);

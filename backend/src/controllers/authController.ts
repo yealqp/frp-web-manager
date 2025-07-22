@@ -1,8 +1,9 @@
 import { Request, Response } from 'express';
 import userModel from '../models/userModel';
-import { generateToken } from '../middlewares/authMiddleware';
 import logger from '../utils/logger';
-import jwt from 'jsonwebtoken';
+import { generateToken } from '../middlewares/authMiddleware';
+import fs from 'fs';
+import path from 'path';
 
 // 用户登录
 export const login = async (req: Request, res: Response) => {
@@ -48,6 +49,7 @@ export const login = async (req: Request, res: Response) => {
         data: {
           id: user.id,
           username: user.username,
+          role: user.role,
           token
         }
       });
@@ -92,6 +94,7 @@ export const register = async (req: Request, res: Response) => {
       data: {
         id: user.id,
         username: user.username,
+        role: user.role,
         token
       }
     });
@@ -116,9 +119,18 @@ export const getCurrentUser = (req: Request, res: Response) => {
     success: true,
     data: {
       id: req.user.id,
-      username: req.user.username
+      userId: req.user.userId,
+      username: req.user.username,
+      role: req.user.role,
+      createdAt: req.user.createdAt
     }
   });
+};
+
+// 用户登出
+export const logout = (req: Request, res: Response) => {
+  // JWT 无需服务端失效处理，前端丢弃即可
+  res.json({ success: true, message: '成功登出' });
 };
 
 // 获取当前用户信息
@@ -140,7 +152,10 @@ export const getMe = async (req: Request, res: Response) => {
       success: true,
       data: {
         id: user.id,
-        username: user.username
+        userId: user.userId,
+        username: user.username,
+        role: user.role,
+        createdAt: user.createdAt
       }
     });
   } catch (error) {
@@ -256,4 +271,29 @@ export const updateUser = async (req: Request, res: Response) => {
     logger.error(`更新用户信息错误: ${error}`);
     res.status(500).json({ success: false, message: '服务器错误' });
   }
-}; 
+};
+
+// 获取系统公告
+export const getNotice = (req: Request, res: Response) => {
+  const filePath = path.resolve(__dirname, '../../data/notice.md');
+  try {
+    const content = fs.existsSync(filePath) ? fs.readFileSync(filePath, 'utf-8') : '';
+    res.json({ success: true, data: content });
+  } catch (error) {
+    res.status(500).json({ success: false, message: '读取公告失败' });
+  }
+};
+// 编辑系统公告（仅管理员）
+export const setNotice = (req: Request, res: Response) => {
+  const filePath = path.resolve(__dirname, '../../data/notice.md');
+  const { content } = req.body;
+  if (typeof content !== 'string') {
+    return res.status(400).json({ success: false, message: '内容不能为空' });
+  }
+  try {
+    fs.writeFileSync(filePath, content, 'utf-8');
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ success: false, message: '保存公告失败' });
+  }
+};

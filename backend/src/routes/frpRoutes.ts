@@ -1,8 +1,13 @@
 import { Router } from 'express';
 import * as frpController from '../controllers/frpController';
 import { authMiddleware } from '../middlewares/authMiddleware';
+import { getServerList } from '../controllers/frpController';
+import { getNodeNameByNodeId } from '../controllers/frpController';
 
 const router = Router();
+
+// 服务器列表（放在authMiddleware之前，允许未登录获取）
+router.get('/server-list', getServerList);
 
 // 所有FRP路由都需要身份验证
 router.use(authMiddleware);
@@ -22,5 +27,8 @@ router.get('/configs/:id/content', frpController.readConfigFile);
 
 // 模板
 router.get('/templates/:type', frpController.getTemplateConfig);
+
+// 查询节点名称
+router.get('/tunnels/node-name/:nodeId', getNodeNameByNodeId);
 
 export default router; 

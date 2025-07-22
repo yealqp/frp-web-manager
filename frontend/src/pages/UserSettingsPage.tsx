@@ -56,13 +56,6 @@ const UserSettingsPage: React.FC = () => {
 
   return (
     <div style={{ maxWidth: '800px', margin: '0 auto', padding: '20px' }}>
-      <Button 
-        icon={<ArrowLeftOutlined />} 
-        onClick={() => navigate(-1)} 
-        style={{ marginBottom: '20px' }}
-      >
-        返回
-      </Button>
 
       <Card>
         <Title level={2}>用户设置</Title>

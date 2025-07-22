@@ -1,10 +1,8 @@
 import React, { Suspense } from 'react';
-import { Typography, Breadcrumb, Spin } from 'antd';
+import {Breadcrumb, Spin } from 'antd';
 import { Link } from 'react-router-dom';
 import LogViewer from '../components/LogViewer';
 import PageTransition from '../components/PageTransition';
-
-const { Title } = Typography;
 
 const LogViewerPage: React.FC = () => {
   return (

@@ -86,7 +86,7 @@ const LogViewer: React.FC = () => {
   
   // 返回列表
   const handleBack = () => {
-    navigate('/');
+    navigate('/tunnels');
   };
   
   return (

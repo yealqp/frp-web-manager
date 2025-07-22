@@ -1,13 +1,15 @@
 import React, { useEffect, useState } from 'react';
 import { Table, Button, Space, Tag, Modal, message } from 'antd';
-import { PlusOutlined, EditOutlined, DeleteOutlined, PlayCircleOutlined, PauseCircleOutlined, EyeOutlined } from '@ant-design/icons';
+import {EditOutlined, DeleteOutlined, PlayCircleOutlined, PauseCircleOutlined, EyeOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
-import { FrpConfig, getAllConfigs, deleteConfig, startFrp, stopFrp } from '../api/frpApi';
+import { FrpConfig, getAllConfigs, deleteConfig, startFrp, stopFrp, readConfig, getNodeNameByNodeId } from '../api/frpApi';
 
 const ConfigList: React.FC = () => {
   const [configs, setConfigs] = useState<FrpConfig[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
   const navigate = useNavigate();
+  const [detailModal, setDetailModal] = useState<{ visible: boolean; detail?: any }>({ visible: false });
+  const [nodeNameLoading, setNodeNameLoading] = useState(false);
 
   // 加载配置列表
   const loadConfigs = async () => {
@@ -86,25 +88,48 @@ const ConfigList: React.FC = () => {
     navigate(`/edit/${id}`);
   };
 
-  // 新建配置
-  const handleCreate = () => {
-    navigate('/create');
+  // 详情弹窗
+  const handleShowDetail = async (record: any) => {
+    try {
+      const content = await readConfig(record.id);
+      const serverAddr = content.match(/serverAddr\s*=\s*"([^"]+)"/)?.[1] || '';
+      const remotePort = content.match(/remotePort\s*=\s*"?([0-9]+)"?/)?.[1] || '';
+      const protocolType = content.match(/type\s*=\s*"(\w+)"/)?.[1] || '';
+      const localPort = content.match(/localPort\s*=\s*"?([0-9]+)"?/)?.[1] || '';
+      const localIp = content.match(/localIP\s*=\s*"([^"]+)"/)?.[1] || '';
+      setNodeNameLoading(true);
+      let nodeName = '';
+      if (record.nodeId) {
+        try {
+          nodeName = await getNodeNameByNodeId(record.nodeId);
+        } catch { nodeName = ''; }
+      }
+      setNodeNameLoading(false);
+      setDetailModal({ visible: true, detail: {
+        name: record.name,
+        protocolType,
+        localPort,
+        localIp,
+        nodeName,
+        addr: serverAddr && remotePort ? `${serverAddr}:${remotePort}` : '未知',
+      }});
+    } catch {
+      setNodeNameLoading(false);
+      setDetailModal({ visible: true, detail: undefined });
+    }
   };
 
   // 表格列定义
   const columns = [
     {
+      title: '隧道ID',
+      dataIndex: 'tunnelId',
+      key: 'tunnelId',
+    },
+    {
       title: '名称',
       dataIndex: 'name',
       key: 'name',
-    },
-    {
-      title: '类型',
-      dataIndex: 'type',
-      key: 'type',
-      render: (type: string) => (
-        type === 'frpc' ? <Tag color="blue">frpc</Tag> : <Tag color="green">frps</Tag>
-      ),
     },
     {
       title: '状态',
@@ -175,6 +200,12 @@ const ConfigList: React.FC = () => {
             编辑
           </Button>
           <Button 
+            icon={<EditOutlined />} 
+            onClick={() => handleShowDetail(record)}
+          >
+            详情
+          </Button>
+          <Button 
             danger 
             icon={<DeleteOutlined />} 
             onClick={() => handleDelete(record.id, record.name)}
@@ -189,21 +220,31 @@ const ConfigList: React.FC = () => {
 
   return (
     <div className="config-list">
-      <div style={{ marginBottom: 16 }}>
-        <Button 
-          type="primary" 
-          icon={<PlusOutlined />} 
-          onClick={handleCreate}
-        >
-          新建配置
-        </Button>
-      </div>
       <Table 
         columns={columns} 
         dataSource={configs} 
         rowKey="id" 
         loading={loading}
       />
+      <Modal
+        title="隧道详情"
+        visible={detailModal.visible}
+        onCancel={() => setDetailModal({ visible: false })}
+        footer={null}
+      >
+        {detailModal.detail ? (
+          <div style={{ lineHeight: 2 }}>
+            <div><b>隧道名称：</b>{detailModal.detail.name}</div>
+            <div><b>协议类型：</b>{detailModal.detail.protocolType}</div>
+            <div><b>本地端口：</b>{detailModal.detail.localPort}</div>
+            <div><b>本地地址：</b>{detailModal.detail.localIp}</div>
+            <div><b>节点名称：</b>{nodeNameLoading ? '加载中...' : detailModal.detail.nodeName || '未知'}</div>
+            <div><b>连接地址：</b>{detailModal.detail.addr}</div>
+          </div>
+        ) : (
+          <div>解析失败</div>
+        )}
+      </Modal>
     </div>
   );
 };

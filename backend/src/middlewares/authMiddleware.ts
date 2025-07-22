@@ -7,18 +7,6 @@ import logger from '../utils/logger';
 const JWT_SECRET = 'frp-manager-secret-key';
 const JWT_EXPIRATION = '24h';
 
-// 为Request接口扩展，添加user属性
-declare global {
-  namespace Express {
-    interface Request {
-      user?: {
-        id: string;
-        username: string;
-      };
-    }
-  }
-}
-
 // 生成JWT令牌
 export const generateToken = (id: string, username: string): string => {
   try {
@@ -35,7 +23,6 @@ export const generateToken = (id: string, username: string): string => {
 
 // 验证JWT令牌的中间件
 export const authMiddleware = async (req: Request, res: Response, next: NextFunction) => {
-  // 从请求头中获取令牌
   const authHeader = req.headers.authorization;
   const token = authHeader && authHeader.split(' ')[1];
 
@@ -44,22 +31,34 @@ export const authMiddleware = async (req: Request, res: Response, next: NextFunc
   }
 
   try {
-    // 验证令牌
     const decoded = jwt.verify(token, JWT_SECRET) as { id: string; username: string };
-    
-    // 查找用户
     const user = await userModel.findById(decoded.id);
-    
+
     if (!user) {
       return res.status(401).json({ success: false, message: '用户不存在或令牌无效' });
     }
-    
-    // 将用户信息添加到请求对象中
-    req.user = { id: decoded.id, username: decoded.username };
-    
+
+    // 补充role字段
+    req.user = user;
     next();
-  } catch (error) {
-    logger.error(`认证失败: ${error}`);
-    res.status(401).json({ success: false, message: '认证失败，令牌无效' });
+  } catch (error: any) {
+    logger.error(`认证失败: ${error?.name} - ${error?.message} - token: ${token?.slice(0, 10)}...`);
+    let message = '认证失败，令牌无效';
+    if (error.name === 'TokenExpiredError') {
+      message = '令牌已过期，请重新登录';
+    } else if (error.name === 'JsonWebTokenError') {
+      message = '令牌格式错误，请重新登录';
+    } else if (error.name === 'NotBeforeError') {
+      message = '令牌尚未生效';
+    }
+    res.status(401).json({ success: false, message });
   }
+};
+
+// 管理员权限中间件
+export const adminMiddleware = (req: Request, res: Response, next: NextFunction) => {
+  if ((req.user as any)?.role !== 'admin') {
+    return res.status(403).json({ success: false, message: '需要管理员权限' });
+  }
+  next();
 }; 

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Form, Input, Button, Card, message, Select, Skeleton, Spin } from 'antd';
 import { useNavigate, useParams } from 'react-router-dom';
-import { editConfig, readConfigFile, getConfig, createConfig, getTemplateConfig } from '../api/frpApi';
+import { editConfig, readConfigFile, getConfig, createConfig, getTemplateConfig, getServerList, ServerInfo, getAllConfigs } from '../api/frpApi';
 
 const { Option } = Select;
 const { TextArea } = Input;
@@ -16,15 +16,35 @@ const ConfigForm: React.FC<ConfigFormProps> = ({ mode }) => {
   const [loading, setLoading] = useState<boolean>(false);
   const [content, setContent] = useState<string>('');
   const [configName, setConfigName] = useState<string>('');
-  const [configType, setConfigType] = useState<'frpc' | 'frps'>('frpc');
+  const [configType, setConfigType] = useState<'frpc'>('frpc'); // 只保留frpc
   const [initialLoading, setInitialLoading] = useState<boolean>(true);
   
+  // 新增：表单字段状态
+  const [serverAddr, setServerAddr] = useState('127.0.0.1');
+  const [serverPort, setServerPort] = useState('7000');
+  const [tokenValue, setTokenValue] = useState('12345678');
+  const [localIp, setLocalIp] = useState('127.0.0.1');
+  const [localPort, setLocalPort] = useState('22');
+  const [remotePort, setRemotePort] = useState('6000');
+  const [protocolType, setProtocolType] = useState<'tcp' | 'udp' >('tcp');
+  const [serverList, setServerList] = useState<ServerInfo[]>([]);
+  const [selectedServer, setSelectedServer] = useState<ServerInfo | null>(null);
+
+  // 新建时用模板初始化表单
   useEffect(() => {
-    // 如果是创建模式，加载模板配置
     if (mode === 'create') {
       setInitialLoading(true);
       getTemplateConfig('frpc')
         .then(template => {
+          // 解析模板，初始化表单字段
+          // 简单正则提取
+          setServerAddr(template.match(/server_addr\s*=\s*"([^"]+)"/)?.[1] || '127.0.0.1');
+          setServerPort(template.match(/server_port\s*=\s*"?([0-9]+)"?/)?.[1] || '7000');
+          setTokenValue(template.match(/token\s*=\s*"([^"]+)"/)?.[1] || '12345678');
+          setLocalIp(template.match(/local_ip\s*=\s*"([^"]+)"/)?.[1] || '127.0.0.1');
+          setLocalPort(template.match(/local_port\s*=\s*"?([0-9]+)"?/)?.[1] || '22');
+          setRemotePort(template.match(/remote_port\s*=\s*"?([0-9]+)"?/)?.[1] || '6000');
+          setProtocolType(template.match(/type\s*=\s*"(tcp|udp|http|https)"/)?.[1] as any || 'tcp');
           setContent(template);
         })
         .catch(error => {
@@ -56,11 +76,33 @@ const ConfigForm: React.FC<ConfigFormProps> = ({ mode }) => {
     }
   }, [mode, id]);
   
+  // 加载服务器列表
+  useEffect(() => {
+    getServerList().then(list => setServerList(list)).catch(() => setServerList([]));
+  }, []);
+
+  // 选择服务器后自动填充
+  useEffect(() => {
+    if (selectedServer) {
+      setServerAddr(selectedServer.server_addr);
+      setServerPort(String(selectedServer.server_port));
+      setTokenValue(selectedServer.token);
+    }
+  }, [selectedServer]);
+  
   // 加载配置内容
   const loadConfigContent = async (configId: string) => {
     try {
       const data = await readConfigFile(configId);
       setContent(data);
+      // 解析配置内容，填充表单字段
+      setServerAddr(data.match(/serverAddr\s*=\s*"([^"]+)"/)?.[1] || '');
+      setServerPort(data.match(/serverPort\s*=\s*"?([0-9]+)"?/)?.[1] || '');
+      setTokenValue(data.match(/token\s*=\s*'([^']+)'/)?.[1] || '');
+      setLocalIp(data.match(/localIP\s*=\s*"([^"]+)"/)?.[1] || '');
+      setLocalPort(data.match(/localPort\s*=\s*"?([0-9]+)"?/)?.[1] || '');
+      setRemotePort(data.match(/remotePort\s*=\s*"?([0-9]+)"?/)?.[1] || '');
+      setProtocolType(data.match(/type\s*=\s*"(\w+)"/)?.[1] as any || 'tcp');
       return data;
     } catch (error) {
       message.error('加载配置内容失败');
@@ -70,7 +112,7 @@ const ConfigForm: React.FC<ConfigFormProps> = ({ mode }) => {
   };
 
   // 处理类型变更
-  const handleTypeChange = (value: 'frpc' | 'frps') => {
+  const handleTypeChange = (value: 'frpc') => {
     if (value === configType) return; // 避免重复加载
     
     setConfigType(value);
@@ -91,12 +133,26 @@ const ConfigForm: React.FC<ConfigFormProps> = ({ mode }) => {
       });
   };
   
-  // 保存配置
+  // 保存配置时组装为新格式
   const handleSave = async () => {
+    const toml = `serverAddr = "${serverAddr}"
+serverPort = ${serverPort}
+
+[auth]
+method = 'token'
+token = '${tokenValue}'
+
+[[proxies]]
+name = "${configName}"
+type = "${protocolType}"
+localIP = "${localIp}"
+localPort = ${localPort}
+remotePort = ${remotePort}
+`;
     if (mode === 'edit' && id) {
       setLoading(true);
       try {
-        await editConfig(id, content);
+        await editConfig(id, toml);
         message.success('保存成功');
       } catch (error) {
         message.error('保存失败');
@@ -106,14 +162,14 @@ const ConfigForm: React.FC<ConfigFormProps> = ({ mode }) => {
       }
     } else if (mode === 'create') {
       if (!configName) {
-        message.error('请输入配置名称');
+        message.error('请输入隧道名称');
         return;
       }
       setLoading(true);
       try {
-        await createConfig(configName, configType, content);
+        await createConfig(configName, configType, toml);
         message.success('创建成功');
-        navigate('/');
+        navigate('/tunnels');
       } catch (error) {
         message.error('创建失败');
         console.error(error);
@@ -123,20 +179,15 @@ const ConfigForm: React.FC<ConfigFormProps> = ({ mode }) => {
     }
   };
   
-  // 处理文本区域内容变化
-  const handleContentChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    setContent(e.target.value);
-  };
-  
   // 返回列表
   const handleBack = () => {
-    navigate('/');
+    navigate('/tunnels');
   };
   
   return (
     <div className="config-form smooth-content">
       <Card
-        title={mode === 'create' ? '新建配置' : `${configName || '未知'} - 配置编辑`}
+        title={mode === 'create' ? '新建隧道' : `${configName || '未知'} - 隧道编辑`}
         extra={
           <>
             <Button 
@@ -185,7 +236,7 @@ const ConfigForm: React.FC<ConfigFormProps> = ({ mode }) => {
                 <Form layout="inline">
                   <Form.Item label="名称" style={{ marginBottom: 16 }}>
                     <Input 
-                      placeholder="请输入配置名称" 
+                      placeholder="请输入隧道名称" 
                       value={configName}
                       onChange={(e) => setConfigName(e.target.value)}
                       style={{ 
@@ -193,20 +244,6 @@ const ConfigForm: React.FC<ConfigFormProps> = ({ mode }) => {
                         transition: 'all 0.3s cubic-bezier(0.23, 1, 0.32, 1)'
                       }}
                     />
-                  </Form.Item>
-                  <Form.Item label="类型" style={{ marginBottom: 16 }}>
-                    <Select 
-                      value={configType}
-                      onChange={handleTypeChange}
-                      style={{ 
-                        width: 120,
-                        transition: 'all 0.3s cubic-bezier(0.23, 1, 0.32, 1)'
-                      }}
-                      disabled={loading}
-                    >
-                      <Option value="frpc">frpc</Option>
-                      <Option value="frps">frps</Option>
-                    </Select>
                   </Form.Item>
                 </Form>
               </div>
@@ -234,20 +271,86 @@ const ConfigForm: React.FC<ConfigFormProps> = ({ mode }) => {
                 filter: loading ? 'blur(1.5px)' : 'none',
                 transform: loading ? 'scale(0.99)' : 'scale(1)'
               }}>
-                <TextArea
-                  value={content}
-                  onChange={handleContentChange}
-                  placeholder="请输入配置内容"
-                  autoSize={{ minRows: 20, maxRows: 30 }}
-                  style={{ 
-                    width: '100%', 
-                    fontFamily: 'monospace',
-                    transition: 'all 0.5s var(--ease-smooth)',
-                    borderColor: loading ? '#e8e8e8' : '#d9d9d9',
-                    boxShadow: loading ? 'none' : '0 0 0 2px rgba(24, 144, 255, 0.0)'
-                  }}
-                  disabled={loading}
-                />
+                <Form layout="vertical">
+                  <Form.Item label="服务器" required>
+                    <Select
+                      value={selectedServer ? selectedServer.name : undefined}
+                      onChange={name => {
+                        const s = serverList.find(item => item.name === name);
+                        setSelectedServer(s || null);
+                      }}
+                      placeholder="请选择服务器"
+                      disabled={loading}
+                      style={{ width: 240 }}
+                    >
+                      {serverList.map(s => (
+                        <Select.Option key={s.name} value={s.name}>{s.name}</Select.Option>
+                      ))}
+                    </Select>
+                  </Form.Item>
+                  {selectedServer && selectedServer.allowed_ports && (
+                    <div style={{ marginBottom: 16, color: '#888' }}>
+                      该机器允许远程端口范围：{selectedServer.allowed_ports[0]} - {selectedServer.allowed_ports[1]}
+                    </div>
+                  )}
+                  <Form.Item label="机器内网IP" required>
+                    <Input value={localIp} onChange={e => setLocalIp(e.target.value)} disabled={loading} />
+                  </Form.Item>
+                  <Form.Item label="本地端口" required>
+                    <Input value={localPort} onChange={e => setLocalPort(e.target.value)} disabled={loading} />
+                  </Form.Item>
+                  <Form.Item label="远程端口" required>
+                    <Input
+                      value={remotePort}
+                      onChange={e => setRemotePort(e.target.value)}
+                      disabled={loading}
+                      style={{ width: 180, marginRight: 8 }}
+                    />
+                    <Button
+                      onClick={async () => {
+                        if (!selectedServer || !selectedServer.allowed_ports) {
+                          message.warning('请先选择服务器');
+                          return;
+                        }
+                        setLoading(true);
+                        try {
+                          const configs = await getAllConfigs();
+                          // 只筛选当前服务器下的隧道
+                          const usedPorts = configs
+                            .filter(cfg => cfg.nodeId === selectedServer.nodeId)
+                            .map(cfg => Number(cfg.remotePort));
+                          const [start, end] = selectedServer.allowed_ports;
+                          let found = null;
+                          for (let p = start; p <= end; p++) {
+                            if (!usedPorts.includes(p)) {
+                              found = p;
+                              break;
+                            }
+                          }
+                          if (found) {
+                            setRemotePort(String(found));
+                            message.success(`已自动填充空闲端口：${found}`);
+                          } else {
+                            message.error('没有可用的空闲端口');
+                          }
+                        } catch (e) {
+                          message.error('获取端口信息失败');
+                        } finally {
+                          setLoading(false);
+                        }
+                      }}
+                      disabled={loading}
+                    >
+                      获取空闲端口
+                    </Button>
+                  </Form.Item>
+                  <Form.Item label="协议类型" required>
+                    <Select value={protocolType} onChange={v => setProtocolType(v)} disabled={loading} style={{ width: 120 }}>
+                      <Select.Option value="tcp">tcp</Select.Option>
+                      <Select.Option value="udp">udp</Select.Option>
+                    </Select>
+                  </Form.Item>
+                </Form>
               </div>
             </div>
           </>

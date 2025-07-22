@@ -1,0 +1,11 @@
+backend/node_modules/
+frontend/node_modules/
+backend/config
+backend/data
+backend/dist
+backend/logs
+frontend/build
+frontend/public/favicon.ico
+backend/package-lock.json
+frontend/package-lock.json
+backend/.env

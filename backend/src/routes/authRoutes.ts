@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import * as authController from '../controllers/authController';
-import { authMiddleware } from '../middlewares/authMiddleware';
+import { authMiddleware, adminMiddleware } from '../middlewares/authMiddleware';
 import logger from '../utils/logger';
 
 const router = Router();
@@ -21,4 +21,11 @@ router.get('/me', authMiddleware, authController.getMe);
 // 用户信息更新路由
 router.put('/update-user', authMiddleware, authController.updateUser);
 
-export default router; 
+// 登出路由
+router.post('/logout', authMiddleware, authController.logout);
+
+// 公告相关
+router.get('/notice', authController.getNotice);
+router.post('/notice', authMiddleware, adminMiddleware, authController.setNotice);
+
+export default router;

@@ -7,8 +7,13 @@ const API_URL = `${getApiBaseUrl()}/api/auth`;
 // 用户类型定义
 export interface User {
   id: string;
+  userId?: number;
   username: string;
+  role?: string;
   token?: string;
+  source?: string;
+  createdAt?: string;
+  tunnels?: Array<{ tunnelId: number; name: string; configFile: string; }>;
 }
 
 // 登录响应类型
@@ -60,17 +65,28 @@ export const register = async (username: string, password: string): Promise<User
     password
   });
   
-  // 保存令牌到本地存储
-  if (response.data.data.token) {
-    localStorage.setItem('token', response.data.data.token);
-    localStorage.setItem('user', JSON.stringify(response.data.data));
-  }
-  
+  // 注册后不自动登录，所以不保存令牌
   return response.data.data;
 };
 
 // 登出方法
-export const logout = (): void => {
+export const logout = async (): Promise<void> => {
+  const token = localStorage.getItem('token');
+  
+  if (token) {
+    try {
+      // 调用后端登出接口使令牌失效
+      await axios.post(`${API_URL}/logout`, {}, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+    } catch (error) {
+      console.error('登出时发生错误:', error);
+    }
+  }
+  
+  // 无论后端请求是否成功，都清除本地存储
   localStorage.removeItem('token');
   localStorage.removeItem('user');
 };
@@ -109,6 +125,19 @@ export const getStoredUser = (): User | null => {
   }
 };
 
+// 获取系统公告
+export const getNotice = async (): Promise<string> => {
+  const response = await axios.get(`${API_URL}/notice`);
+  return response.data.data;
+};
+// 编辑系统公告
+export const setNotice = async (content: string): Promise<void> => {
+  const token = localStorage.getItem('token');
+  await axios.post(`${API_URL}/notice`, { content }, {
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+  });
+};
+
 // 设置请求拦截器添加认证令牌
 // 已在apiConfig.ts中配置，此处可以删除
-// axios.interceptors.request.use... 部分 
+// axios.interceptors.request.use... 部分
