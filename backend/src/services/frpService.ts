@@ -24,7 +24,26 @@ class FrpService {
     fs.ensureDirSync(this.configDir);
     fs.ensureDirSync(this.binDir);
     
-    // 移除this.loadConfigs();
+    // 配置文件热重载
+    this.setupConfigWatcher();
+  }
+
+  // 配置文件热重载
+  private setupConfigWatcher() {
+    const watchRecursive = (dir: string) => {
+      fs.watch(dir, { persistent: true }, (event, filename) => {
+        if (filename && (filename.endsWith('.toml') || filename.endsWith('.json') || filename.endsWith('.js') || filename.endsWith('.ts'))) {
+          this.loadConfigs();
+        }
+      });
+      // 递归监听子目录
+      fs.readdirSync(dir, { withFileTypes: true }).forEach(entry => {
+        if (entry.isDirectory()) {
+          watchRecursive(path.join(dir, entry.name));
+        }
+      });
+    };
+    watchRecursive(this.configDir);
   }
 
   // 设置Socket.IO实例，用于实时推送日志
@@ -116,13 +135,13 @@ class FrpService {
   }
 
   // 创建新配置
-  async createConfig(name: string, type: 'frpc', content: string, userId?: string): Promise<FrpConfig> {
+  async createConfig(name: string, type: 'frpc', content: string, userId?: string, serverNodeId?: number): Promise<FrpConfig> {
     if (type !== 'frpc') {
       throw new Error('只支持frpc类型');
     }
-    // 1. 获取下一个tunnelId和nodeId
     const tunnelId = this.getNextTunnelId();
-    const nodeId = this.getNextNodeId();
+    // nodeId应由前端传入（即所选服务器的nodeId）
+    const nodeId = serverNodeId || 1;
     if (!userId) throw new Error('必须指定userId');
     const userFolder = path.join(this.configDir, userId);
     await fs.ensureDir(userFolder);
@@ -149,9 +168,8 @@ class FrpService {
       updatedAt: new Date(),
       nodeId,
       nodeName: name,
-      remotePort // 新增
+      remotePort
     };
-    // 2. 只写入用户tunnels
     await userModel.addTunnelToUser(userId, {
       tunnelId,
       name,
@@ -163,12 +181,12 @@ class FrpService {
     });
     this.configs.push(config);
     logger.info(`创建配置 ${name} 成功`);
-    // 隧道上限校验
     const user = await userModel.findById(userId);
     const tunnelLimit = (user && typeof user.tunnelLimit === 'number') ? user.tunnelLimit : 50;
     if (user && user.tunnels && user.tunnels.length > tunnelLimit - 1) {
       throw new Error(`每个用户最多只能创建${tunnelLimit}个隧道`);
     }
+    await this.loadConfigs(); // 新建后强制刷新
     return config;
   }
 
@@ -211,19 +229,19 @@ class FrpService {
     const allUsers = await userModel.findAll();
     for (const user of allUsers) {
       await userModel.removeTunnelFromUser(user.id, config.tunnelId);
-      // 删除配置文件
-      const configFilePath = path.join(this.configDir, user.id, `${config.tunnelId}.toml`);
-      if (await fs.pathExists(configFilePath)) {
-        await fs.remove(configFilePath);
-      }
-      // 如果用户文件夹已空，自动删除
-      const userFolder = path.join(this.configDir, user.id);
-      if ((await fs.readdir(userFolder)).length === 0) {
-        await fs.remove(userFolder);
-      }
+    }
+    // 删除配置文件
+    const configFilePath = path.join(config.folderPath, config.id);
+    if (await fs.pathExists(configFilePath)) {
+      await fs.remove(configFilePath);
+    }
+    // 如果用户文件夹已空，自动删除
+    if ((await fs.readdir(config.folderPath)).length === 0) {
+      await fs.remove(config.folderPath);
     }
     // 从配置列表中移除
     this.configs = this.configs.filter(c => c.id !== id);
+    await this.loadConfigs(); // 删除后强制刷新
     return true;
   }
 

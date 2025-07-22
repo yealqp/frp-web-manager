@@ -122,7 +122,8 @@ export const getCurrentUser = (req: Request, res: Response) => {
       userId: req.user.userId,
       username: req.user.username,
       role: req.user.role,
-      createdAt: req.user.createdAt
+      createdAt: req.user.createdAt,
+      tunnelLimit: req.user.tunnelLimit
     }
   });
 };
@@ -155,7 +156,8 @@ export const getMe = async (req: Request, res: Response) => {
         userId: user.userId,
         username: user.username,
         role: user.role,
-        createdAt: user.createdAt
+        createdAt: user.createdAt,
+        tunnelLimit: user.tunnelLimit
       }
     });
   } catch (error) {

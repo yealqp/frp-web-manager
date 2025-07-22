@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Form, Input, Button, Card, message, Select, Skeleton, Spin } from 'antd';
 import { useNavigate, useParams } from 'react-router-dom';
-import { editConfig, readConfigFile, getConfig, createConfig, getTemplateConfig, getServerList, ServerInfo, getAllConfigs } from '../api/frpApi';
+import { editConfig, readConfigFile, getConfig, createConfig, getServerList, ServerInfo, getAllConfigs } from '../api/frpApi';
 
 const { Option } = Select;
 const { TextArea } = Input;
@@ -16,7 +16,6 @@ const ConfigForm: React.FC<ConfigFormProps> = ({ mode }) => {
   const [loading, setLoading] = useState<boolean>(false);
   const [content, setContent] = useState<string>('');
   const [configName, setConfigName] = useState<string>('');
-  const [configType, setConfigType] = useState<'frpc'>('frpc'); // 只保留frpc
   const [initialLoading, setInitialLoading] = useState<boolean>(true);
   
   // 新增：表单字段状态
@@ -30,33 +29,10 @@ const ConfigForm: React.FC<ConfigFormProps> = ({ mode }) => {
   const [serverList, setServerList] = useState<ServerInfo[]>([]);
   const [selectedServer, setSelectedServer] = useState<ServerInfo | null>(null);
 
-  // 新建时用模板初始化表单
+  // 删除configType、content、setContent、getTemplateConfig等所有相关状态和逻辑
+  // 如果是编辑模式，加载配置内容和配置名称
   useEffect(() => {
-    if (mode === 'create') {
-      setInitialLoading(true);
-      getTemplateConfig('frpc')
-        .then(template => {
-          // 解析模板，初始化表单字段
-          // 简单正则提取
-          setServerAddr(template.match(/server_addr\s*=\s*"([^"]+)"/)?.[1] || '127.0.0.1');
-          setServerPort(template.match(/server_port\s*=\s*"?([0-9]+)"?/)?.[1] || '7000');
-          setTokenValue(template.match(/token\s*=\s*"([^"]+)"/)?.[1] || '12345678');
-          setLocalIp(template.match(/local_ip\s*=\s*"([^"]+)"/)?.[1] || '127.0.0.1');
-          setLocalPort(template.match(/local_port\s*=\s*"?([0-9]+)"?/)?.[1] || '22');
-          setRemotePort(template.match(/remote_port\s*=\s*"?([0-9]+)"?/)?.[1] || '6000');
-          setProtocolType(template.match(/type\s*=\s*"(tcp|udp|http|https)"/)?.[1] as any || 'tcp');
-          setContent(template);
-        })
-        .catch(error => {
-          message.error('加载模板配置失败');
-          console.error(error);
-        })
-        .finally(() => {
-          setInitialLoading(false);
-        });
-    }
-    // 如果是编辑模式，加载配置内容和配置名称
-    else if (mode === 'edit' && id) {
+    if (mode === 'edit' && id) {
       setInitialLoading(true);
       // 加载配置信息
       Promise.all([
@@ -73,6 +49,17 @@ const ConfigForm: React.FC<ConfigFormProps> = ({ mode }) => {
       ]).finally(() => {
         setInitialLoading(false);
       });
+    } else if (mode === 'create') {
+      setConfigName('');
+      setServerAddr('');
+      setServerPort('');
+      setTokenValue('');
+      setLocalIp('');
+      setLocalPort('');
+      setRemotePort('');
+      setProtocolType('tcp');
+      setSelectedServer(null);
+      setInitialLoading(false);
     }
   }, [mode, id]);
   
@@ -111,27 +98,7 @@ const ConfigForm: React.FC<ConfigFormProps> = ({ mode }) => {
     }
   };
 
-  // 处理类型变更
-  const handleTypeChange = (value: 'frpc') => {
-    if (value === configType) return; // 避免重复加载
-    
-    setConfigType(value);
-    setLoading(true);
-    
-    // 不立即更改内容，只设置加载状态
-    // 然后异步加载模板
-    getTemplateConfig(value)
-      .then(template => {
-        setContent(template);
-      })
-      .catch(error => {
-        message.error('加载模板配置失败');
-        console.error(error);
-      })
-      .finally(() => {
-        setLoading(false);
-      });
-  };
+  // 删除handleTypeChange相关内容
   
   // 保存配置时组装为新格式
   const handleSave = async () => {
@@ -167,7 +134,7 @@ remotePort = ${remotePort}
       }
       setLoading(true);
       try {
-        await createConfig(configName, configType, toml);
+        await createConfig(configName, 'frpc', toml, selectedServer?.nodeId);
         message.success('创建成功');
         navigate('/tunnels');
       } catch (error) {
@@ -258,7 +225,7 @@ remotePort = ${remotePort}
                     transform: 'scale(1.1)',
                     transition: 'transform 0.3s var(--ease-smooth)'
                   }}>
-                    <Spin size="large" tip={`加载${configType}模板...`} />
+                    <Spin size="large" tip={`加载模板...`} />
                     <div style={{ marginTop: '10px', fontSize: '12px', color: '#888' }}>
                       请稍候...
                     </div>
@@ -315,14 +282,17 @@ remotePort = ${remotePort}
                         setLoading(true);
                         try {
                           const configs = await getAllConfigs();
-                          // 只筛选当前服务器下的隧道
-                          const usedPorts = configs
-                            .filter(cfg => cfg.nodeId === selectedServer.nodeId)
-                            .map(cfg => Number(cfg.remotePort));
+                          // 只筛选当前服务器下的隧道，编辑模式下排除自己
+                          const usedPorts = new Set(
+                            configs
+                              .filter(cfg => cfg.nodeId === selectedServer.nodeId && (!id || cfg.id !== id))
+                              .map(cfg => Number(cfg.remotePort))
+                              .filter(p => Number.isInteger(p) && p > 0)
+                          );
                           const [start, end] = selectedServer.allowed_ports;
                           let found = null;
                           for (let p = start; p <= end; p++) {
-                            if (!usedPorts.includes(p)) {
+                            if (!usedPorts.has(p)) {
                               found = p;
                               break;
                             }

@@ -53,7 +53,7 @@ export const getConfig = async (req: Request, res: Response) => {
 // 创建配置
 export const createConfig = async (req: Request, res: Response) => {
   try {
-    const { name, type, content } = req.body;
+    const { name, type, content, serverNodeId } = req.body;
     
     if (!name || !type || !content) {
       return res.status(400).json({ success: false, message: '缺少必要参数' });
@@ -63,7 +63,7 @@ export const createConfig = async (req: Request, res: Response) => {
       return res.status(400).json({ success: false, message: '类型必须是 frpc' });
     }
     
-    const config = await frpService.createConfig(name, type, content, req.user?.id);
+    const config = await frpService.createConfig(name, type, content, req.user?.id, serverNodeId);
     res.json({ success: true, data: config });
   } catch (error) {
     logger.error(`创建配置失败: ${error}`);

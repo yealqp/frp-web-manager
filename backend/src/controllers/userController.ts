@@ -30,7 +30,19 @@ export const createUser = async (req: Request, res: Response) => {
 export const getAllUsers = async (req: Request, res: Response) => {
   try {
     const users = await userModel.findAll();
-    res.json({ success: true, data: users.map((u: any) => ({ id: u.id, userId: u.userId, username: u.username, role: u.role, source: u.source })) });
+    res.json({
+      success: true,
+      data: users.map((u: any) => ({
+        id: u.id,
+        userId: u.userId,
+        username: u.username,
+        role: u.role,
+        source: u.source,
+        tunnels: u.tunnels || [],
+        tunnelLimit: u.tunnelLimit,
+        tunnelCount: u.tunnels ? u.tunnels.length : 0
+      }))
+    });
   } catch (error) {
     logger.error(`获取用户列表失败: ${error}`);
     res.status(500).json({ success: false, message: '获取用户列表失败' });

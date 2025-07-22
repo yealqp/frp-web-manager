@@ -39,8 +39,8 @@ class UserModel {
     const dbFile = path.join(dataDir, 'users.json');
     const adapter = new JSONFile<DbData>(dbFile);
     this.db = new Low<DbData>(adapter);
-    
-    // 初始化默认数据结构
+    // 热重载users.json
+    this.setupUserJsonWatcher(dbFile);
     this.initDb();
   }
   
@@ -285,6 +285,15 @@ class UserModel {
     if (!user || !user.tunnels) return;
     user.tunnels = user.tunnels.filter(t => t.tunnelId !== tunnelId);
     await this.db.write();
+  }
+
+  // 热重载users.json
+  private setupUserJsonWatcher(dbFile: string) {
+    fs.watch(dbFile, { persistent: true }, (event, filename) => {
+      if (event === 'change') {
+        this.db.read();
+      }
+    });
   }
 }
 

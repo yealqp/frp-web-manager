@@ -40,8 +40,8 @@ export const getConfig = async (id: string): Promise<FrpConfig> => {
 };
 
 // 创建配置
-export const createConfig = async (name: string, type: 'frpc' | 'frps', content: string): Promise<FrpConfig> => {
-  const response = await axios.post(`${API_URL}/configs`, { name, type, content });
+export const createConfig = async (name: string, type: 'frpc' | 'frps', content: string, serverNodeId?: number): Promise<FrpConfig> => {
+  const response = await axios.post(`${API_URL}/configs`, { name, type, content, serverNodeId });
   return response.data.data;
 };
 

@@ -128,7 +128,7 @@ const UserManagementPage: React.FC = () => {
       title: '隧道用量',
       dataIndex: 'tunnels',
       key: 'tunnels',
-      render: (tunnels: any) => `${tunnels ? tunnels.length : 0}/20`,
+      render: (_: any, record: User) => `${record.tunnels ? record.tunnels.length : 0}/${record.tunnelLimit ?? 50}`,
     },
     {
       title: '操作',

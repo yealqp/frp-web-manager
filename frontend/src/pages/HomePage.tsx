@@ -29,7 +29,7 @@ const HomePage: React.FC = () => {
                 <Descriptions.Item label="用户名">{user.username}</Descriptions.Item>
                 <Descriptions.Item label="权限">{user.role}</Descriptions.Item>
                 {user.createdAt && <Descriptions.Item label="注册时间">{new Date(user.createdAt).toLocaleString()}</Descriptions.Item>}
-                <Descriptions.Item label="隧道用量">{user.tunnels ? `${user.tunnels.length}/20` : `0/20`}</Descriptions.Item>
+                <Descriptions.Item label="隧道用量">{user.tunnels ? `${user.tunnels.length}/${user.tunnelLimit ?? 50}` : `0/${user.tunnelLimit ?? 50}`}</Descriptions.Item>
               </Descriptions>
             )}
           </Card>

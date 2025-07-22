@@ -14,6 +14,7 @@ export interface User {
   source?: string;
   createdAt?: string;
   tunnels?: Array<{ tunnelId: number; name: string; configFile: string; }>;
+  tunnelLimit?: number; // 新增
 }
 
 // 登录响应类型
