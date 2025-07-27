@@ -101,8 +101,25 @@ const ConfigForm: React.FC<ConfigFormProps> = ({ mode }) => {
 
   // 删除handleTypeChange相关内容
   
+  // 校验本地IP是否合法
+  const validateLocalIp = (ip: string): string | null => {
+    if (!ip) return '请输入本机内网IP';
+    if (!/^10\.0\.0\.[0-9]{1,3}$/.test(ip)) {
+      return '只允许填写10.0.0.x网段的地址';
+    }
+    if (ip === '10.0.0.2') {
+      return '10.0.0.2 不允许使用';
+    }
+    return null;
+  };
+
   // 保存配置时组装为新格式
   const handleSave = async () => {
+    const ipError = validateLocalIp(localIp);
+    if (ipError) {
+      message.error(ipError);
+      return;
+    }
     const toml = `serverAddr = "${serverAddr}"
 serverPort = ${serverPort}
 
@@ -241,11 +258,11 @@ remotePort = ${remotePort}
                   </Col>
                   <Col xs={24} sm={12} />
                   <Col xs={24} sm={12}>
-                    <Form.Item label={<span style={{ fontWeight: 600 }}>机器内网IP <span style={{ color: '#ff4d4f' }}>*</span></span>} required>
+                    <Form.Item label={<span style={{ fontWeight: 600 }}>机器内网IP <span style={{ color: '#ff4d4f' }}>*</span></span>} required
+                      validateStatus={validateLocalIp(localIp) ? 'error' : ''}
+                      help={validateLocalIp(localIp) || <span style={{ color: '#888', fontSize: 12 }}>请填写本机内网IP（10.0.0.x win+r输入cmd，输入ipconfig，找到以10.0.0开头的地址）</span>}
+                    >
                       <Input value={localIp} onChange={e => setLocalIp(e.target.value)} disabled={loading} style={{ width: '100%', borderRadius: 6, fontSize: 15 }} />
-                      <div style={{ marginTop: 4, color: '#888', fontSize: 12 }}>
-                        请填写本机内网IP（10.0.0.x win+r输入cmd，输入ipconfig，找到以10.0.0开头的地址）
-                      </div>
                     </Form.Item>
                   </Col>
                   <Col xs={24} sm={12}>

@@ -13,6 +13,7 @@ import userRoutes from './routes/userRoutes';
 import frpService from './services/frpService';
 import logger from './utils/logger';
 import userModel from './models/userModel';
+import { ipRestrictMiddleware } from './middlewares/ipRestrictMiddleware';
 
 // 定义端口变量
 const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 3001;
@@ -41,6 +42,9 @@ app.use(cors({
 }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// 全局IP白名单拦截
+app.use(ipRestrictMiddleware);
 
 // 为静态前端文件提供服务（如果在生产环境）
 if (process.env.NODE_ENV === 'production') {

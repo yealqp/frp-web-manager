@@ -8,16 +8,11 @@ import logger from '../utils/logger';
 // 用户数据类型
 export interface User {
   id: string;
-  userId: number; // 顺延数字
   username: string;
   passwordHash: string;
   role: 'admin' | 'user';
-  userGroup: string; // 新增字段
-  source: string; // 来源
   createdAt: string;
   updatedAt: string;
-  tunnels?: Array<{ tunnelId: number; name: string; configFile: string; nodeId?: number; nodeName?: string; createdAt?: string; updatedAt?: string; remotePort?: number; }>;
-  tunnelLimit?: number;
 }
 
 // 数据库类型
@@ -39,8 +34,8 @@ class UserModel {
     const dbFile = path.join(dataDir, 'users.json');
     const adapter = new JSONFile<DbData>(dbFile);
     this.db = new Low<DbData>(adapter);
-    // 热重载users.json
-    this.setupUserJsonWatcher(dbFile);
+    
+    // 初始化默认数据结构
     this.initDb();
   }
   
@@ -52,12 +47,6 @@ class UserModel {
       this.db.data = { users: [] };
       await this.db.write();
     }
-  }
-  
-  // 获取下一个userId
-  private getNextUserId(): number {
-    if (!this.db.data || this.db.data.users.length === 0) return 1;
-    return Math.max(...this.db.data.users.map(u => u.userId || 0)) + 1;
   }
   
   // 初始化管理员用户（如果数据库为空）
@@ -73,12 +62,9 @@ class UserModel {
       logger.info('数据库中没有用户，创建默认管理员账户');
       const defaultAdmin = {
         id: uuidv4(),
-        userId: 1,
         username: 'admin',
         passwordHash: await bcrypt.hash('admin', this.SALT_ROUNDS),
         role: 'admin' as 'admin',
-        userGroup: 'default', // 新增字段
-        source: '系统内置',
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()
       };
@@ -92,7 +78,7 @@ class UserModel {
   }
   
   // 创建新用户
-  async createUser(username: string, password: string, source: string = '手动添加'): Promise<User> {
+  async createUser(username: string, password: string): Promise<User> {
     await this.db.read();
     
     // 确保db.data始终有效
@@ -109,15 +95,11 @@ class UserModel {
     // 创建新用户
     const newUser: User = {
       id: uuidv4(),
-      userId: this.getNextUserId(),
       username,
       passwordHash: await bcrypt.hash(password, this.SALT_ROUNDS),
       role: 'user',
-      userGroup: 'default', // 新增字段
-      source,
       createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-      tunnelLimit: 50 // 默认50
+      updatedAt: new Date().toISOString()
     };
     
     this.db.data.users.push(newUser);
@@ -201,7 +183,7 @@ class UserModel {
   }
   
   // 更新用户信息
-  async updateUser(userId: string, updates: { username?: string; password?: string; tunnelLimit?: number }): Promise<User | null> {
+  async updateUser(userId: string, updates: { username?: string; password?: string }): Promise<User | null> {
     await this.db.read();
     
     if (!this.db.data) {
@@ -235,10 +217,6 @@ class UserModel {
       }
     }
 
-    if (typeof updates.tunnelLimit === 'number') {
-      user.tunnelLimit = updates.tunnelLimit;
-    }
-
     user.updatedAt = new Date().toISOString();
     this.db.data.users[userIndex] = user;
     await this.db.write();
@@ -264,36 +242,6 @@ class UserModel {
     }
 
     return false;
-  }
-
-  // 为用户添加隧道
-  async addTunnelToUser(userId: string, tunnel: { tunnelId: number; name: string; configFile: string; nodeId?: number; nodeName?: string; createdAt?: string; updatedAt?: string; remotePort?: number; }) {
-    await this.db.read();
-    if (!this.db.data) return;
-    const user = this.db.data.users.find(u => u.id === userId);
-    if (!user) return;
-    if (!user.tunnels) user.tunnels = [];
-    user.tunnels.push(tunnel);
-    await this.db.write();
-  }
-
-  // 移除用户的隧道
-  async removeTunnelFromUser(userId: string, tunnelId: number) {
-    await this.db.read();
-    if (!this.db.data) return;
-    const user = this.db.data.users.find(u => u.id === userId);
-    if (!user || !user.tunnels) return;
-    user.tunnels = user.tunnels.filter(t => t.tunnelId !== tunnelId);
-    await this.db.write();
-  }
-
-  // 热重载users.json
-  private setupUserJsonWatcher(dbFile: string) {
-    fs.watch(dbFile, { persistent: true }, (event, filename) => {
-      if (event === 'change') {
-        this.db.read();
-      }
-    });
   }
 }
 
